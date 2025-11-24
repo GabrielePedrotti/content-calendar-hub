@@ -104,16 +104,14 @@ const Index = () => {
             (d) => d.getMonth() === targetDate.getMonth() && d.getFullYear() === targetDate.getFullYear()
           );
 
-          // Solo se la settimana ha almeno 4 giorni nel mese target, la includiamo
-          if (daysInTargetMonth.length >= 4) {
-            const labelDate = daysInTargetMonth[Math.floor(daysInTargetMonth.length / 2)] ?? targetDate;
-            allWeeks.push({
-              weekNumber: weekCounter++,
-              days: weekDays,
-              monthYear: `${targetDate.getMonth()}-${targetDate.getFullYear()}`,
-              monthLabelDate: labelDate,
-            });
-          }
+          // Mostra tutte le settimane, anche quelle a cavallo tra due mesi
+          const labelDate = daysInTargetMonth[Math.floor(daysInTargetMonth.length / 2)] ?? targetDate;
+          allWeeks.push({
+            weekNumber: weekCounter++,
+            days: weekDays,
+            monthYear: `${targetDate.getMonth()}-${targetDate.getFullYear()}`,
+            monthLabelDate: labelDate,
+          });
         });
       }
 
