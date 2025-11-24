@@ -57,6 +57,23 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        category: {
+          chronicles: "hsl(var(--category-chronicles))",
+          gaming: "hsl(var(--category-gaming))",
+          minecraft: "hsl(var(--category-minecraft))",
+          rec: "hsl(var(--category-rec))",
+          vod: "hsl(var(--category-vod))",
+          twitch: "hsl(var(--category-twitch))",
+        },
+        grid: {
+          border: "hsl(var(--grid-border))",
+        },
+        cell: {
+          hover: "hsl(var(--cell-hover))",
+        },
+        sunday: {
+          accent: "hsl(var(--sunday-accent))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
