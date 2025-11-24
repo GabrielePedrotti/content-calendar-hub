@@ -9,6 +9,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -18,7 +20,6 @@ import {
 } from "@/components/ui/select";
 import { Category, ContentItem } from "@/types/planner";
 import { format } from "date-fns";
-import { it } from "date-fns/locale";
 import { Trash2 } from "lucide-react";
 
 interface ContentDialogProps {
@@ -45,16 +46,22 @@ export const ContentDialog = ({
   const [title, setTitle] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [date, setDate] = useState("");
+  const [published, setPublished] = useState(false);
+  const [notes, setNotes] = useState("");
 
   useEffect(() => {
     if (content) {
       setTitle(content.title);
       setCategoryId(content.categoryId);
       setDate(format(content.date, "yyyy-MM-dd"));
+      setPublished(content.published);
+      setNotes(content.notes || "");
     } else {
       setTitle("");
       setCategoryId(preselectedCategory || categories[0]?.id || "");
       setDate(preselectedDate ? format(preselectedDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd"));
+      setPublished(false);
+      setNotes("");
     }
   }, [content, preselectedCategory, preselectedDate, categories, open]);
 
@@ -65,7 +72,8 @@ export const ContentDialog = ({
         title,
         categoryId,
         date: new Date(date),
-        published: content?.published || false,
+        published,
+        notes: notes || undefined,
       });
       onOpenChange(false);
     }
@@ -118,6 +126,29 @@ export const ContentDialog = ({
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="published"
+              checked={published}
+              onCheckedChange={(checked) => setPublished(checked as boolean)}
+            />
+            <Label
+              htmlFor="published"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              Pubblicato
+            </Label>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="notes">Note (opzionale)</Label>
+            <Textarea
+              id="notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Aggiungi note..."
+              rows={3}
             />
           </div>
         </div>
