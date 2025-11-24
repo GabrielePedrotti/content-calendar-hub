@@ -100,11 +100,20 @@ const Index = () => {
             isSunday: isSunday(day),
           }));
 
-          allWeeks.push({
-            weekNumber: weekCounter++,
-            days: weekDays,
-            monthYear: `${getMonth(targetDate)}-${getYear(targetDate)}`,
-          });
+          // Determina il mese di riferimento basandosi sui giorni centrali della settimana
+          // Usa il giorno che ha il numero più alto (tipicamente il giorno più avanzato della settimana nel mese)
+          const daysInTargetMonth = days.filter(
+            d => d.getMonth() === targetDate.getMonth() && d.getFullYear() === targetDate.getFullYear()
+          );
+          
+          // Solo se la settimana ha almeno 4 giorni nel mese target, la includiamo
+          if (daysInTargetMonth.length >= 4) {
+            allWeeks.push({
+              weekNumber: weekCounter++,
+              days: weekDays,
+              monthYear: `${targetDate.getMonth()}-${targetDate.getFullYear()}`,
+            });
+          }
         });
       }
 
