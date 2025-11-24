@@ -74,6 +74,10 @@ export default {
         sunday: {
           accent: "hsl(var(--sunday-accent))",
         },
+        'category-header': 'hsl(var(--muted))',
+        'vacation-overlay': 'hsl(var(--vacation-overlay))',
+        'vacation-accent': 'hsl(var(--vacation-accent))',
+        'vacation-text': 'hsl(var(--vacation-text))',
       },
       borderRadius: {
         lg: "var(--radius)",

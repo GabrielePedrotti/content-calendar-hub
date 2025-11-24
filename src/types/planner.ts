@@ -29,3 +29,10 @@ export interface SeriesConfig {
   startDate: Date;
   frequency: 'daily' | 'weekdays' | 'weekly';
 }
+
+export interface VacationPeriod {
+  id: string;
+  startDate: Date;
+  endDate: Date;
+  label: string;
+}

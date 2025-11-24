@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { PlannerHeader } from "@/components/planner/PlannerHeader";
 import { CompactWeekGrid } from "@/components/planner/CompactWeekGrid";
 import { ContentDialog } from "@/components/planner/ContentDialog";
@@ -6,9 +6,12 @@ import { CategoryManager } from "@/components/planner/CategoryManager";
 import { SeriesCreator } from "@/components/planner/SeriesCreator";
 import { PlannerFilters } from "@/components/planner/PlannerFilters";
 import { InfoDialog } from "@/components/planner/InfoDialog";
-import { Category, ContentItem, WeekDay, SeriesConfig } from "@/types/planner";
+import { VacationManager } from "@/components/planner/VacationManager";
+import { TaskView } from "@/components/planner/TaskView";
+import { Category, ContentItem, WeekDay, SeriesConfig, VacationPeriod } from "@/types/planner";
 import { Button } from "@/components/ui/button";
-import { Info } from "lucide-react";
+import { Info, Calendar, ListTodo } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   startOfMonth,
   endOfMonth,
@@ -34,6 +37,7 @@ const Index = () => {
   const [editingContent, setEditingContent] = useState<ContentItem | undefined>();
   const [preselectedCategory, setPreselectedCategory] = useState<string | undefined>();
   const [preselectedDate, setPreselectedDate] = useState<Date | undefined>();
+  const [viewMode, setViewMode] = useState<"planner" | "task">("planner");
 
   // Filtri
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -41,6 +45,10 @@ const Index = () => {
 
   // Drag & Drop
   const [draggedContent, setDraggedContent] = useState<ContentItem | null>(null);
+  const [isAltDrag, setIsAltDrag] = useState(false);
+
+  // Link highlighting
+  const [highlightedContentId, setHighlightedContentId] = useState<string | null>(null);
 
   const [categories, setCategories] = useState<Category[]>([
     { id: "chronicles", name: "CHRONICLES", color: "142 76% 45%" },
@@ -52,6 +60,7 @@ const Index = () => {
   ]);
 
   const [contents, setContents] = useState<ContentItem[]>([]);
+  const [vacations, setVacations] = useState<VacationPeriod[]>([]);
 
   const weeks = useMemo(() => {
     const monthStart = startOfMonth(currentDate);
@@ -201,9 +210,10 @@ const Index = () => {
     toast.success(`Serie creata: ${newContents.length} contenuti aggiunti`);
   };
 
-  // Drag & Drop
-  const handleDragStart = (content: ContentItem) => {
+  // Drag & Drop with ALT support
+  const handleDragStart = (content: ContentItem, altPressed: boolean) => {
     setDraggedContent(content);
+    setIsAltDrag(altPressed);
   };
 
   const handleDragOver = (categoryId: string, date: Date) => {
@@ -213,15 +223,30 @@ const Index = () => {
   const handleDrop = (categoryId: string, date: Date) => {
     if (!draggedContent) return;
 
-    setContents((prev) =>
-      prev.map((c) =>
-        c.id === draggedContent.id
-          ? { ...c, categoryId, date }
-          : c
-      )
-    );
+    if (isAltDrag) {
+      // ALT + Drag = Duplica
+      const duplicated: ContentItem = {
+        ...draggedContent,
+        id: Date.now().toString(),
+        categoryId,
+        date,
+      };
+      setContents((prev) => [...prev, duplicated]);
+      toast.success("Contenuto duplicato");
+    } else {
+      // Drag normale = Sposta
+      setContents((prev) =>
+        prev.map((c) =>
+          c.id === draggedContent.id
+            ? { ...c, categoryId, date }
+            : c
+        )
+      );
+      toast.success("Contenuto spostato");
+    }
+    
     setDraggedContent(null);
-    toast.success("Contenuto spostato");
+    setIsAltDrag(false);
   };
 
   // Duplicazione
@@ -245,7 +270,64 @@ const Index = () => {
     toast.success(content.published ? "Segnato come non pubblicato" : "Segnato come pubblicato");
   };
 
-  // Quick edit inline
+  // Vacations management
+  const handleAddVacation = (startDate: Date, endDate: Date, label: string) => {
+    const newVacation: VacationPeriod = {
+      id: Date.now().toString(),
+      startDate,
+      endDate,
+      label,
+    };
+    setVacations((prev) => [...prev, newVacation]);
+    toast.success(`Periodo "${label}" aggiunto`);
+  };
+
+  const handleDeleteVacation = (id: string) => {
+    setVacations((prev) => prev.filter((v) => v.id !== id));
+    toast.success("Periodo eliminato");
+  };
+
+  // Link highlighting
+  const handleLinkHover = (contentId: string | null) => {
+    setHighlightedContentId(contentId);
+  };
+
+  const handleLinkClick = (content: ContentItem) => {
+    if (!content.linkedContentId) return;
+    
+    const linkedContent = contents.find((c) => c.id === content.linkedContentId);
+    if (!linkedContent) {
+      toast.error("Contenuto collegato non trovato");
+      return;
+    }
+
+    // Highlight temporaneo
+    setHighlightedContentId(content.linkedContentId);
+    setTimeout(() => setHighlightedContentId(null), 2000);
+
+    // Scroll to content (if visible)
+    const linkedElement = document.querySelector(`[data-content-id="${content.linkedContentId}"]`);
+    if (linkedElement) {
+      linkedElement.scrollIntoView({ behavior: "smooth", block: "center" });
+    } else {
+      toast.info(
+        `Contenuto collegato: ${format(linkedContent.date, "d MMM", { locale: it })} - ${
+          categories.find((cat) => cat.id === linkedContent.categoryId)?.name
+        }`
+      );
+    }
+  };
+
+  // Task view scroll
+  const handleScrollToContent = (content: ContentItem) => {
+    setViewMode("planner");
+    setTimeout(() => {
+      const element = document.querySelector(`[data-content-id="${content.id}"]`);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 100);
+  };
   const handleQuickEdit = (
     content: ContentItem | undefined,
     categoryId: string,
@@ -293,6 +375,11 @@ const Index = () => {
             categories={categories}
             onCreateSeries={handleCreateSeries}
           />
+          <VacationManager
+            vacations={vacations}
+            onAddVacation={handleAddVacation}
+            onDeleteVacation={handleDeleteVacation}
+          />
         </div>
         <Button
           variant="outline"
@@ -305,33 +392,61 @@ const Index = () => {
         </Button>
       </div>
 
-      <PlannerFilters
-        categories={categories}
-        selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
-        selectedWeek={selectedWeek}
-        onWeekChange={setSelectedWeek}
-        totalWeeks={weeks.length}
-      />
+      <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "planner" | "task")} className="w-full">
+        <TabsList className="w-full justify-start rounded-none border-b h-auto p-0 bg-transparent">
+          <TabsTrigger value="planner" className="gap-2 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
+            <Calendar className="h-4 w-4" />
+            Planner
+          </TabsTrigger>
+          <TabsTrigger value="task" className="gap-2 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
+            <ListTodo className="h-4 w-4" />
+            Task
+          </TabsTrigger>
+        </TabsList>
 
-      <main className="p-6">
-        {filteredWeeks.map((week) => (
-          <CompactWeekGrid
-            key={week.weekNumber}
-            weekNumber={week.weekNumber}
-            weekDays={week.days}
-            categories={filteredCategories}
-            contents={contents}
-            onEditContent={handleEditContent}
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-            onDuplicate={handleDuplicate}
-            onTogglePublished={handleTogglePublished}
-            onQuickEdit={handleQuickEdit}
+        <TabsContent value="planner" className="m-0">
+          <PlannerFilters
+            categories={categories}
+            selectedCategory={selectedCategory}
+            onCategoryChange={setSelectedCategory}
+            selectedWeek={selectedWeek}
+            onWeekChange={setSelectedWeek}
+            totalWeeks={weeks.length}
           />
-        ))}
-      </main>
+
+          <main className="p-6">
+            {filteredWeeks.map((week) => (
+              <CompactWeekGrid
+                key={week.weekNumber}
+                weekNumber={week.weekNumber}
+                weekDays={week.days}
+                categories={filteredCategories}
+                contents={contents}
+                vacations={vacations}
+                onEditContent={handleEditContent}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                onDuplicate={handleDuplicate}
+                onTogglePublished={handleTogglePublished}
+                onQuickEdit={handleQuickEdit}
+                onLinkHover={handleLinkHover}
+                onLinkClick={handleLinkClick}
+                highlightedContentId={highlightedContentId}
+              />
+            ))}
+          </main>
+        </TabsContent>
+
+        <TabsContent value="task" className="m-0">
+          <TaskView
+            contents={contents}
+            categories={categories}
+            onTogglePublished={handleTogglePublished}
+            onScrollToContent={handleScrollToContent}
+          />
+        </TabsContent>
+      </Tabs>
 
       <ContentDialog
         open={dialogOpen}

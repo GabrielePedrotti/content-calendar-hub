@@ -61,4 +61,7 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
   }
+  --vacation-overlay: hsl(var(--destructive) / 0.05);
+  --vacation-accent: hsl(var(--destructive) / 0.2);
+  --vacation-text: hsl(var(--destructive-foreground));
 }
