@@ -36,6 +36,7 @@ export const LinkedContentSelector = ({
   const filteredContents = useMemo(() => {
     return contents
       .filter((c) => c.id !== currentContentId)
+      .filter((c) => !c.published) // Escludi contenuti già pubblicati
       .filter((c) => {
         const matchesSearch = !searchQuery || 
           c.title.toLowerCase().includes(searchQuery.toLowerCase());

@@ -38,6 +38,7 @@ const Index = () => {
   const [preselectedCategory, setPreselectedCategory] = useState<string | undefined>();
   const [preselectedDate, setPreselectedDate] = useState<Date | undefined>();
   const [viewMode, setViewMode] = useState<"planner" | "task">("planner");
+  const [cellOpacity, setCellOpacity] = useState({ empty: 8, filled: 35 });
 
   // Filtri
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -413,6 +414,8 @@ const Index = () => {
         onPreviousMonth={handlePreviousMonth}
         onNextMonth={handleNextMonth}
         onAddContent={handleAddContent}
+        cellOpacity={cellOpacity}
+        onOpacityChange={setCellOpacity}
       />
 
       <div className="flex items-center justify-between px-6 py-3 border-b border-grid-border">
@@ -485,6 +488,7 @@ const Index = () => {
                 onLinkHover={handleLinkHover}
                 onLinkClick={handleLinkClick}
                 highlightedContentId={highlightedContentId}
+                cellOpacity={cellOpacity}
               />
             ))}
           </main>

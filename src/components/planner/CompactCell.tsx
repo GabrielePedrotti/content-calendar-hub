@@ -35,6 +35,7 @@ interface CompactCellProps {
   allContents: ContentItem[];
   allCategories: Category[];
   highlightedContentId?: string | null;
+  cellOpacity: { empty: number; filled: number };
 }
 
 export const CompactCell = ({
@@ -56,6 +57,7 @@ export const CompactCell = ({
   allContents,
   allCategories,
   highlightedContentId,
+  cellOpacity,
 }: CompactCellProps) => {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -157,7 +159,9 @@ export const CompactCell = ({
       <div
         ref={cellRef}
         style={{
-          backgroundColor: contents.length > 0 ? `hsl(${category.color} / 0.35)` : `hsl(${category.color} / 0.08)`,
+          backgroundColor: contents.length > 0 
+            ? `hsl(${category.color} / ${cellOpacity.filled / 100})` 
+            : `hsl(${category.color} / ${cellOpacity.empty / 100})`,
         }}
         className={cn(
           "h-[44px] border transition-all relative flex items-center justify-center px-2",
@@ -189,11 +193,11 @@ export const CompactCell = ({
     const baseStyle: React.CSSProperties = {};
     
     if (contents.length === 0) {
-      // Empty cell - very transparent
-      baseStyle.backgroundColor = `hsl(${category.color} / 0.08)`;
+      // Empty cell - configurable transparency
+      baseStyle.backgroundColor = `hsl(${category.color} / ${cellOpacity.empty / 100})`;
     } else {
-      // Cell with content - more visible
-      baseStyle.backgroundColor = `hsl(${category.color} / 0.35)`;
+      // Cell with content - configurable transparency
+      baseStyle.backgroundColor = `hsl(${category.color} / ${cellOpacity.filled / 100})`;
       baseStyle.borderTopWidth = '2px';
       baseStyle.borderBottomWidth = '2px';
       baseStyle.borderTopColor = `hsl(${category.color} / 0.6)`;

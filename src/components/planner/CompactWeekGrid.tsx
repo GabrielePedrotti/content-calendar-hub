@@ -20,6 +20,7 @@ interface CompactWeekGridProps {
   onLinkHover: (contentId: string | null) => void;
   onLinkClick: (content: ContentItem) => void;
   highlightedContentId?: string | null;
+  cellOpacity: { empty: number; filled: number };
 }
 
 export const CompactWeekGrid = ({
@@ -38,6 +39,7 @@ export const CompactWeekGrid = ({
   onLinkHover,
   onLinkClick,
   highlightedContentId,
+  cellOpacity,
 }: CompactWeekGridProps) => {
   const getVacationForDate = (date: Date) => {
     return vacations.find((v) =>
@@ -147,6 +149,7 @@ export const CompactWeekGrid = ({
                       allContents={contents}
                       allCategories={categories}
                       highlightedContentId={highlightedContentId}
+                      cellOpacity={cellOpacity}
                     />
                   );
                 })}
