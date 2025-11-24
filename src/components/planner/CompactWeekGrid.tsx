@@ -55,7 +55,7 @@ export const CompactWeekGrid = ({
           {/* Colonna categorie fissa a sinistra */}
           <div className="flex-shrink-0" style={{ width: "140px" }}>
             {/* Header vuoto per allineamento */}
-            <div className="h-[80px] border-b border-grid-border bg-muted/30" />
+            <div className="h-[60px] border-b border-grid-border bg-muted/30" />
             
             {/* Lista categorie */}
             {categories.map((category) => (
@@ -84,22 +84,24 @@ export const CompactWeekGrid = ({
                   <div
                     key={day.date.toISOString()}
                     className={cn(
-                      "p-2 text-center border-r border-grid-border last:border-r-0 border-b h-[80px] flex flex-col items-center justify-center relative",
+                      "p-1.5 text-center border-r border-grid-border last:border-r-0 border-b h-[60px] flex flex-col items-center justify-center relative gap-0.5",
                       day.isSunday && "bg-sunday-accent",
                       vacationForDay && "bg-vacation-accent border-vacation-accent"
                     )}
                   >
-                    <div className="text-xs font-medium uppercase">
-                      {format(day.date, "EEE", { locale: it })}
+                    <div className="flex items-center gap-1">
+                      <div className="text-[10px] font-medium uppercase">
+                        {format(day.date, "EEE", { locale: it })}
+                      </div>
+                      <div className="text-xl font-bold">{day.dayNumber}</div>
                     </div>
-                    <div className="text-2xl font-bold">{day.dayNumber}</div>
                     {vacationForDay && (
-                      <div className="text-[10px] font-semibold text-vacation-foreground mt-1 px-2 py-0.5 rounded bg-vacation-badge">
+                      <div className="text-[9px] font-semibold text-vacation-foreground px-1.5 py-0.5 rounded bg-vacation-badge leading-tight">
                         {vacationForDay.label}
                       </div>
                     )}
                     {contentCount > 0 && (
-                      <div className="text-[10px] text-muted-foreground mt-1">
+                      <div className="text-[9px] text-muted-foreground leading-tight">
                         {contentCount} {contentCount === 1 ? "contenuto" : "contenuti"}
                       </div>
                     )}

@@ -107,8 +107,12 @@ export const CompactCell = ({
   };
 
   const handleSave = () => {
-    if (editValue.trim()) {
-      onQuickEdit(editingContent, editValue.trim());
+    const trimmedValue = editValue.trim();
+    // If title is empty, delete the content
+    if (!trimmedValue && editingContent) {
+      onQuickEdit(editingContent, "");
+    } else if (trimmedValue) {
+      onQuickEdit(editingContent, trimmedValue);
     }
     setIsEditing(false);
     setEditingContent(undefined);
@@ -186,8 +190,8 @@ export const CompactCell = ({
         "h-[44px] border cursor-pointer transition-all relative group flex flex-col items-center justify-center px-1.5 py-1",
         isSunday && "bg-sunday-accent/50",
         isVacation && "bg-vacation-overlay",
-        contents.length === 0 && `hover:bg-cell-hover border-grid-border bg-[hsl(${category.color}/0.05)]`,
-        contents.length > 0 && `bg-[hsl(${category.color}/0.18)] hover:bg-[hsl(${category.color}/0.28)] border-[hsl(${category.color}/0.5)] border-t-2 border-b-2`,
+        contents.length === 0 && `hover:bg-cell-hover border-grid-border bg-[hsl(${category.color}/0.08)]`,
+        contents.length > 0 && `bg-[hsl(${category.color}/0.35)] hover:bg-[hsl(${category.color}/0.45)] border-[hsl(${category.color}/0.6)] border-t-2 border-b-2`,
         isDraggingOver && "ring-2 ring-primary",
         isHighlighted && "ring-2 ring-primary animate-pulse"
       )}
