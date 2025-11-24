@@ -69,9 +69,7 @@ export const CompactWeekGrid = ({
   // Calcola l'altezza in base al numero massimo di contenuti
   const getRowHeight = (maxContents: number) => {
     if (maxContents <= 1) return "44px";
-    if (maxContents === 2) return "60px";
-    if (maxContents === 3) return "76px";
-    return "92px";
+    return "60px";
   };
 
   return (
