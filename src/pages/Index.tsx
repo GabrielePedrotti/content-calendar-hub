@@ -73,7 +73,7 @@ const Index = () => {
   const weeks = useMemo(() => {
     if (endlessMode) {
       // In modalità endless, genera settimane per più mesi
-      const allWeeks: { weekNumber: number; days: WeekDay[]; monthYear: string }[] = [];
+      const allWeeks: { weekNumber: number; days: WeekDay[]; monthYear: string; monthLabelDate: Date }[] = [];
       let weekCounter = 1;
 
       for (let i = 0; i < monthsToShow; i++) {
@@ -100,18 +100,18 @@ const Index = () => {
             isSunday: isSunday(day),
           }));
 
-          // Determina il mese di riferimento basandosi sui giorni centrali della settimana
-          // Usa il giorno che ha il numero più alto (tipicamente il giorno più avanzato della settimana nel mese)
           const daysInTargetMonth = days.filter(
-            d => d.getMonth() === targetDate.getMonth() && d.getFullYear() === targetDate.getFullYear()
+            (d) => d.getMonth() === targetDate.getMonth() && d.getFullYear() === targetDate.getFullYear()
           );
-          
+
           // Solo se la settimana ha almeno 4 giorni nel mese target, la includiamo
           if (daysInTargetMonth.length >= 4) {
+            const labelDate = daysInTargetMonth[Math.floor(daysInTargetMonth.length / 2)] ?? targetDate;
             allWeeks.push({
               weekNumber: weekCounter++,
               days: weekDays,
               monthYear: `${targetDate.getMonth()}-${targetDate.getFullYear()}`,
+              monthLabelDate: labelDate,
             });
           }
         });
@@ -145,7 +145,8 @@ const Index = () => {
         return {
           weekNumber: index + 1,
           days: weekDays,
-          monthYear: `${getMonth(currentDate)}-${getYear(currentDate)}`,
+          monthYear: `${monthStart.getMonth()}-${monthStart.getFullYear()}`,
+          monthLabelDate: monthStart,
         };
       });
     }
@@ -581,7 +582,7 @@ const Index = () => {
                   
                   return (
                     <div key={week.weekNumber}>
-                      {showSeparator && <MonthSeparator date={week.days[0].date} />}
+                      {showSeparator && <MonthSeparator date={week.monthLabelDate} />}
                       <CompactWeekGrid
                         weekNumber={week.weekNumber}
                         weekDays={week.days}
