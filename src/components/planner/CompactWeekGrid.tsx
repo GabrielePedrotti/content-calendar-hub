@@ -105,26 +105,35 @@ export const CompactWeekGrid = ({
             })}
           </div>
 
-          {/* Griglia giorni e celle */}
-          <div className="flex-1 overflow-x-auto">
-            {/* Header giorni */}
-            <div className="grid grid-cols-7">
-              {weekDays.map((day) => {
-                const dayContents = contents.filter((c) =>
-                  isSameDay(c.date, day.date)
-                );
-                const contentCount = dayContents.length;
-                const vacationForDay = getVacationForDate(day.date);
+      {/* Griglia giorni e celle */}
+      <div className="flex-1 overflow-x-auto">
+        {/* Header giorni */}
+        <div className="grid grid-cols-7">
+          {weekDays.map((day) => {
+            const dayContents = contents.filter((c) =>
+              isSameDay(c.date, day.date)
+            );
+            const contentCount = dayContents.length;
+            const vacationForDay = getVacationForDate(day.date);
 
-                return (
-                  <div
-                    key={day.date.toISOString()}
-                    className={cn(
-                      "p-1.5 text-center border-r border-grid-border last:border-r-0 border-b h-[60px] flex flex-col items-center justify-center relative gap-0.5",
-                      day.isSunday && "bg-sunday-accent",
-                      vacationForDay && "bg-vacation-accent border-vacation-accent"
-                    )}
-                  >
+            const isInReferenceMonth =
+              !endlessMode || !referenceMonth
+                ? true
+                : day.date.getMonth() === referenceMonth.getMonth() &&
+                  day.date.getFullYear() === referenceMonth.getFullYear();
+
+            return (
+              <div
+                key={day.date.toISOString()}
+                className={cn(
+                  "p-1.5 text-center border-r border-grid-border last:border-r-0 border-b h-[60px] flex flex-col items-center justify-center relative gap-0.5",
+                  day.isSunday && "bg-sunday-accent",
+                  vacationForDay && "bg-vacation-accent border-vacation-accent",
+                  !isInReferenceMonth && "opacity-40"
+                )}
+              >
+                {isInReferenceMonth ? (
+                  <>
                     <div className="flex items-center gap-1">
                       <div className="text-[10px] font-medium uppercase">
                         {format(day.date, "EEE", { locale: it })}
@@ -141,10 +150,12 @@ export const CompactWeekGrid = ({
                         {contentCount} {contentCount === 1 ? "contenuto" : "contenuti"}
                       </div>
                     )}
-                  </div>
-                );
-              })}
-            </div>
+                  </>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
 
             {/* Righe categorie */}
             {categories.map((category) => {
