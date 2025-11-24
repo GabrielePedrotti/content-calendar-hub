@@ -194,6 +194,8 @@ export const CompactCell = ({
     } else {
       // Cell with content - more visible
       baseStyle.backgroundColor = `hsl(${category.color} / 0.35)`;
+      baseStyle.borderTopWidth = '2px';
+      baseStyle.borderBottomWidth = '2px';
       baseStyle.borderTopColor = `hsl(${category.color} / 0.6)`;
       baseStyle.borderBottomColor = `hsl(${category.color} / 0.6)`;
     }
@@ -206,11 +208,9 @@ export const CompactCell = ({
       ref={cellRef}
       style={getCellStyle()}
       className={cn(
-        "h-[44px] border cursor-pointer transition-all relative group flex flex-col items-center justify-center px-1.5 py-1",
-        isSunday && "bg-sunday-accent/50",
-        isVacation && "bg-vacation-overlay",
-        contents.length === 0 && "hover:bg-cell-hover border-grid-border",
-        contents.length > 0 && "border-t-2 border-b-2 hover:brightness-110",
+        "h-[44px] border-l border-r border-grid-border cursor-pointer transition-all relative group flex flex-col items-center justify-center px-1.5 py-1",
+        contents.length === 0 && "hover:brightness-110",
+        contents.length > 0 && "hover:brightness-125",
         isDraggingOver && "ring-2 ring-primary",
         isHighlighted && "ring-2 ring-primary animate-pulse"
       )}
