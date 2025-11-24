@@ -47,12 +47,12 @@ export const CompactWeekGrid = ({
     );
   };
 
-  // Calcola il numero massimo di contenuti per ogni giorno (tra tutte le categorie)
-  const getMaxContentsForDay = (date: Date) => {
+  // Calcola il numero massimo di contenuti per ogni riga di categoria
+  const getMaxContentsInRow = (categoryId: string) => {
     let max = 0;
-    categories.forEach((category) => {
+    weekDays.forEach((day) => {
       const count = contents.filter(
-        (c) => c.categoryId === category.id && isSameDay(c.date, date)
+        (c) => c.categoryId === categoryId && isSameDay(c.date, day.date)
       ).length;
       max = Math.max(max, count);
     });
@@ -80,18 +80,22 @@ export const CompactWeekGrid = ({
             <div className="h-[60px] border-b border-grid-border bg-muted/30" />
             
             {/* Lista categorie */}
-            {categories.map((category) => (
-              <div
-                key={category.id}
-                className="h-[44px] border-t border-grid-border flex items-center justify-center font-semibold text-sm px-2"
-                style={{ 
-                  backgroundColor: `hsl(${category.color} / 0.25)`,
-                  color: `hsl(${category.color.split(' ')[0]} ${category.color.split(' ')[1]} 70%)`
-                }}
-              >
-                {category.name}
-              </div>
-            ))}
+            {categories.map((category) => {
+              const maxInRow = getMaxContentsInRow(category.id);
+              return (
+                <div
+                  key={category.id}
+                  className="border-t border-grid-border flex items-center justify-center font-semibold text-sm px-2"
+                  style={{ 
+                    backgroundColor: `hsl(${category.color} / 0.25)`,
+                    color: `hsl(${category.color.split(' ')[0]} ${category.color.split(' ')[1]} 70%)`,
+                    height: getRowHeight(maxInRow)
+                  }}
+                >
+                  {category.name}
+                </div>
+              );
+            })}
           </div>
 
           {/* Griglia giorni e celle */}
@@ -136,47 +140,49 @@ export const CompactWeekGrid = ({
             </div>
 
             {/* Righe categorie */}
-            {categories.map((category) => (
-              <div key={category.id} className="grid grid-cols-7">
-                {weekDays.map((day) => {
-                  const cellContents = contents.filter(
-                    (c) => c.categoryId === category.id && isSameDay(c.date, day.date)
-                  );
-                  const vacationForDay = getVacationForDate(day.date);
-                  const maxContentsInDay = getMaxContentsForDay(day.date);
+            {categories.map((category) => {
+              const maxInRow = getMaxContentsInRow(category.id);
+              return (
+                <div key={category.id} className="grid grid-cols-7">
+                  {weekDays.map((day) => {
+                    const cellContents = contents.filter(
+                      (c) => c.categoryId === category.id && isSameDay(c.date, day.date)
+                    );
+                    const vacationForDay = getVacationForDate(day.date);
 
-                  return (
-                    <CompactCell
-                      key={`${category.id}-${day.date.toISOString()}`}
-                      contents={cellContents}
-                      category={category}
-                      isSunday={day.isSunday}
-                      date={day.date}
-                      isVacation={!!vacationForDay}
-                      vacationLabel={vacationForDay?.label}
-                      onEdit={(content) =>
-                        onEditContent(content, category.id, day.date)
-                      }
-                      onDragStart={onDragStart}
-                      onDragOver={(e) => onDragOver(category.id, day.date)}
-                      onDrop={() => onDrop(category.id, day.date)}
-                      onDuplicate={(content) => onDuplicate(content, day.date)}
-                      onTogglePublished={onTogglePublished}
-                      onQuickEdit={(content, newTitle) =>
-                        onQuickEdit(content, category.id, day.date, newTitle)
-                      }
-                      onLinkHover={onLinkHover}
-                      onLinkClick={onLinkClick}
-                      allContents={contents}
-                      allCategories={categories}
-                      highlightedContentId={highlightedContentId}
-                      cellOpacity={cellOpacity}
-                      maxContentsInDay={maxContentsInDay}
-                    />
-                  );
-                })}
-              </div>
-            ))}
+                    return (
+                      <CompactCell
+                        key={`${category.id}-${day.date.toISOString()}`}
+                        contents={cellContents}
+                        category={category}
+                        isSunday={day.isSunday}
+                        date={day.date}
+                        isVacation={!!vacationForDay}
+                        vacationLabel={vacationForDay?.label}
+                        onEdit={(content) =>
+                          onEditContent(content, category.id, day.date)
+                        }
+                        onDragStart={onDragStart}
+                        onDragOver={(e) => onDragOver(category.id, day.date)}
+                        onDrop={() => onDrop(category.id, day.date)}
+                        onDuplicate={(content) => onDuplicate(content, day.date)}
+                        onTogglePublished={onTogglePublished}
+                        onQuickEdit={(content, newTitle) =>
+                          onQuickEdit(content, category.id, day.date, newTitle)
+                        }
+                        onLinkHover={onLinkHover}
+                        onLinkClick={onLinkClick}
+                        allContents={contents}
+                        allCategories={categories}
+                        highlightedContentId={highlightedContentId}
+                        cellOpacity={cellOpacity}
+                        maxContentsInRow={maxInRow}
+                      />
+                    );
+                  })}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
