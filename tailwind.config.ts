@@ -77,7 +77,8 @@ export default {
         'category-header': 'hsl(var(--muted))',
         'vacation-overlay': 'hsl(var(--vacation-overlay))',
         'vacation-accent': 'hsl(var(--vacation-accent))',
-        'vacation-text': 'hsl(var(--vacation-text))',
+        'vacation-foreground': 'hsl(var(--vacation-foreground))',
+        'vacation-badge': 'hsl(var(--vacation-badge))',
       },
       borderRadius: {
         lg: "var(--radius)",
