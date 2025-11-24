@@ -154,6 +154,8 @@ export const CompactCell = ({
 
   const isHighlighted = contents.some((c) => c.id === highlightedContentId);
 
+  const cellHeight = contents.length <= 1 ? "44px" : contents.length === 2 ? "60px" : contents.length === 3 ? "76px" : "92px";
+
   if (isEditing) {
     return (
       <div
@@ -162,9 +164,10 @@ export const CompactCell = ({
           backgroundColor: contents.length > 0 
             ? `hsl(${category.color} / ${cellOpacity.filled / 100})` 
             : `hsl(${category.color} / ${cellOpacity.empty / 100})`,
+          height: cellHeight,
         }}
         className={cn(
-          "h-[44px] border transition-all relative flex items-center justify-center px-2",
+          "border transition-all relative flex items-center justify-center px-2",
           isSunday && "bg-sunday-accent",
           isVacation && "bg-vacation-overlay",
           "ring-2 ring-primary"
@@ -210,9 +213,12 @@ export const CompactCell = ({
   return (
     <div
       ref={cellRef}
-      style={getCellStyle()}
+      style={{
+        ...getCellStyle(),
+        height: cellHeight,
+      }}
       className={cn(
-        "h-[44px] border-l border-r border-grid-border cursor-pointer transition-all relative group flex flex-col items-center justify-center px-1.5 py-1",
+        "border-l border-r border-grid-border cursor-pointer transition-all relative group flex flex-col items-center justify-center px-1.5 py-1",
         contents.length === 0 && "hover:brightness-110",
         contents.length > 0 && "hover:brightness-125",
         isDraggingOver && "ring-2 ring-primary",
