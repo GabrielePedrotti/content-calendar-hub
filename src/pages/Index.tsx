@@ -1,6 +1,7 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { PlannerHeader } from "@/components/planner/PlannerHeader";
 import { CompactWeekGrid } from "@/components/planner/CompactWeekGrid";
+import { MonthSeparator } from "@/components/planner/MonthSeparator";
 import { ContentDialog } from "@/components/planner/ContentDialog";
 import { CategoryManager } from "@/components/planner/CategoryManager";
 import { SeriesCreator } from "@/components/planner/SeriesCreator";
@@ -26,6 +27,9 @@ import {
   isWeekend,
   addWeeks,
   format,
+  isSameMonth,
+  getMonth,
+  getYear,
 } from "date-fns";
 import { it } from "date-fns/locale";
 import { toast } from "sonner";
@@ -39,6 +43,9 @@ const Index = () => {
   const [preselectedDate, setPreselectedDate] = useState<Date | undefined>();
   const [viewMode, setViewMode] = useState<"planner" | "task">("planner");
   const [cellOpacity, setCellOpacity] = useState({ empty: 8, filled: 35 });
+  const [endlessMode, setEndlessMode] = useState(false);
+  const [monthsToShow, setMonthsToShow] = useState(3);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Filtri
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -64,34 +71,76 @@ const Index = () => {
   const [vacations, setVacations] = useState<VacationPeriod[]>([]);
 
   const weeks = useMemo(() => {
-    const monthStart = startOfMonth(currentDate);
-    const monthEnd = endOfMonth(currentDate);
+    if (endlessMode) {
+      // In modalità endless, genera settimane per più mesi
+      const allWeeks: { weekNumber: number; days: WeekDay[]; monthYear: string }[] = [];
+      let weekCounter = 1;
 
-    const weeksInMonth = eachWeekOfInterval(
-      {
-        start: monthStart,
-        end: monthEnd,
-      },
-      { locale: it, weekStartsOn: 1 }
-    );
+      for (let i = 0; i < monthsToShow; i++) {
+        const targetDate = addMonths(currentDate, i);
+        const monthStart = startOfMonth(targetDate);
+        const monthEnd = endOfMonth(targetDate);
 
-    return weeksInMonth.map((weekStart, index) => {
-      const weekEnd = endOfWeek(weekStart, { locale: it, weekStartsOn: 1 });
-      const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
+        const weeksInMonth = eachWeekOfInterval(
+          {
+            start: monthStart,
+            end: monthEnd,
+          },
+          { locale: it, weekStartsOn: 1 }
+        );
 
-      const weekDays: WeekDay[] = days.map((day) => ({
-        date: day,
-        dayName: day.toLocaleDateString("it-IT", { weekday: "long" }),
-        dayNumber: day.getDate(),
-        isSunday: isSunday(day),
-      }));
+        weeksInMonth.forEach((weekStart) => {
+          const weekEnd = endOfWeek(weekStart, { locale: it, weekStartsOn: 1 });
+          const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
-      return {
-        weekNumber: index + 1,
-        days: weekDays,
-      };
-    });
-  }, [currentDate]);
+          const weekDays: WeekDay[] = days.map((day) => ({
+            date: day,
+            dayName: day.toLocaleDateString("it-IT", { weekday: "long" }),
+            dayNumber: day.getDate(),
+            isSunday: isSunday(day),
+          }));
+
+          allWeeks.push({
+            weekNumber: weekCounter++,
+            days: weekDays,
+            monthYear: `${getMonth(targetDate)}-${getYear(targetDate)}`,
+          });
+        });
+      }
+
+      return allWeeks;
+    } else {
+      // Modalità normale - solo il mese corrente
+      const monthStart = startOfMonth(currentDate);
+      const monthEnd = endOfMonth(currentDate);
+
+      const weeksInMonth = eachWeekOfInterval(
+        {
+          start: monthStart,
+          end: monthEnd,
+        },
+        { locale: it, weekStartsOn: 1 }
+      );
+
+      return weeksInMonth.map((weekStart, index) => {
+        const weekEnd = endOfWeek(weekStart, { locale: it, weekStartsOn: 1 });
+        const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
+
+        const weekDays: WeekDay[] = days.map((day) => ({
+          date: day,
+          dayName: day.toLocaleDateString("it-IT", { weekday: "long" }),
+          dayNumber: day.getDate(),
+          isSunday: isSunday(day),
+        }));
+
+        return {
+          weekNumber: index + 1,
+          days: weekDays,
+          monthYear: `${getMonth(currentDate)}-${getYear(currentDate)}`,
+        };
+      });
+    }
+  }, [currentDate, endlessMode, monthsToShow]);
 
   // Filtro settimane e categorie
   const filteredWeeks = useMemo(() => {
@@ -102,12 +151,48 @@ const Index = () => {
     return categories.filter((cat) => selectedCategory === null || cat.id === selectedCategory);
   }, [categories, selectedCategory]);
 
+  // Scroll infinito - carica più settimane quando si scrolla in basso
+  useEffect(() => {
+    if (!endlessMode) return;
+
+    const handleScroll = () => {
+      const container = scrollContainerRef.current;
+      if (!container) return;
+
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      const scrollPercentage = (scrollTop + clientHeight) / scrollHeight;
+
+      // Quando si è scrollato all'80%, carica altre settimane
+      if (scrollPercentage > 0.8) {
+        setMonthsToShow((prev) => prev + 2);
+      }
+    };
+
+    const container = scrollContainerRef.current;
+    container?.addEventListener("scroll", handleScroll);
+
+    return () => {
+      container?.removeEventListener("scroll", handleScroll);
+    };
+  }, [endlessMode]);
+
   const handlePreviousMonth = () => {
-    setCurrentDate(subMonths(currentDate, 1));
+    if (!endlessMode) {
+      setCurrentDate(subMonths(currentDate, 1));
+    }
   };
 
   const handleNextMonth = () => {
-    setCurrentDate(addMonths(currentDate, 1));
+    if (!endlessMode) {
+      setCurrentDate(addMonths(currentDate, 1));
+    }
+  };
+
+  const handleEndlessModeToggle = (enabled: boolean) => {
+    setEndlessMode(enabled);
+    if (enabled) {
+      setMonthsToShow(3);
+    }
   };
 
   const handleAddContent = () => {
@@ -416,6 +501,8 @@ const Index = () => {
         onAddContent={handleAddContent}
         cellOpacity={cellOpacity}
         onOpacityChange={setCellOpacity}
+        endlessMode={endlessMode}
+        onEndlessModeChange={handleEndlessModeToggle}
       />
 
       <div className="flex items-center justify-between px-6 py-3 border-b border-grid-border">
@@ -469,28 +556,68 @@ const Index = () => {
             totalWeeks={weeks.length}
           />
 
-          <main className="p-6">
-            {filteredWeeks.map((week) => (
-              <CompactWeekGrid
-                key={week.weekNumber}
-                weekNumber={week.weekNumber}
-                weekDays={week.days}
-                categories={filteredCategories}
-                contents={contents}
-                vacations={vacations}
-                onEditContent={handleEditContent}
-                onDragStart={handleDragStart}
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
-                onDuplicate={handleDuplicate}
-                onTogglePublished={handleTogglePublished}
-                onQuickEdit={handleQuickEdit}
-                onLinkHover={handleLinkHover}
-                onLinkClick={handleLinkClick}
-                highlightedContentId={highlightedContentId}
-                cellOpacity={cellOpacity}
-              />
-            ))}
+          <main 
+            ref={scrollContainerRef}
+            className={endlessMode ? "p-6 max-h-[calc(100vh-300px)] overflow-y-auto" : "p-6"}
+          >
+            {endlessMode ? (
+              // Modalità Endless - con separatori di mese
+              (() => {
+                let currentMonth = "";
+                return filteredWeeks.map((week) => {
+                  const weekMonth = week.monthYear;
+                  const showSeparator = currentMonth !== weekMonth;
+                  currentMonth = weekMonth;
+                  
+                  return (
+                    <div key={week.weekNumber}>
+                      {showSeparator && <MonthSeparator date={week.days[0].date} />}
+                      <CompactWeekGrid
+                        weekNumber={week.weekNumber}
+                        weekDays={week.days}
+                        categories={filteredCategories}
+                        contents={contents}
+                        vacations={vacations}
+                        onEditContent={handleEditContent}
+                        onDragStart={handleDragStart}
+                        onDragOver={handleDragOver}
+                        onDrop={handleDrop}
+                        onDuplicate={handleDuplicate}
+                        onTogglePublished={handleTogglePublished}
+                        onQuickEdit={handleQuickEdit}
+                        onLinkHover={handleLinkHover}
+                        onLinkClick={handleLinkClick}
+                        highlightedContentId={highlightedContentId}
+                        cellOpacity={cellOpacity}
+                      />
+                    </div>
+                  );
+                });
+              })()
+            ) : (
+              // Modalità normale
+              filteredWeeks.map((week) => (
+                <CompactWeekGrid
+                  key={week.weekNumber}
+                  weekNumber={week.weekNumber}
+                  weekDays={week.days}
+                  categories={filteredCategories}
+                  contents={contents}
+                  vacations={vacations}
+                  onEditContent={handleEditContent}
+                  onDragStart={handleDragStart}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                  onDuplicate={handleDuplicate}
+                  onTogglePublished={handleTogglePublished}
+                  onQuickEdit={handleQuickEdit}
+                  onLinkHover={handleLinkHover}
+                  onLinkClick={handleLinkClick}
+                  highlightedContentId={highlightedContentId}
+                  cellOpacity={cellOpacity}
+                />
+              ))
+            )}
           </main>
         </TabsContent>
 
