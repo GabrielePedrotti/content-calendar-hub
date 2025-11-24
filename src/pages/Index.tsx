@@ -5,7 +5,10 @@ import { ContentDialog } from "@/components/planner/ContentDialog";
 import { CategoryManager } from "@/components/planner/CategoryManager";
 import { SeriesCreator } from "@/components/planner/SeriesCreator";
 import { PlannerFilters } from "@/components/planner/PlannerFilters";
+import { InfoDialog } from "@/components/planner/InfoDialog";
 import { Category, ContentItem, WeekDay, SeriesConfig } from "@/types/planner";
+import { Button } from "@/components/ui/button";
+import { Info } from "lucide-react";
 import {
   startOfMonth,
   endOfMonth,
@@ -27,6 +30,7 @@ import { toast } from "sonner";
 const Index = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [infoDialogOpen, setInfoDialogOpen] = useState(false);
   const [editingContent, setEditingContent] = useState<ContentItem | undefined>();
   const [preselectedCategory, setPreselectedCategory] = useState<string | undefined>();
   const [preselectedDate, setPreselectedDate] = useState<Date | undefined>();
@@ -241,6 +245,33 @@ const Index = () => {
     toast.success(content.published ? "Segnato come non pubblicato" : "Segnato come pubblicato");
   };
 
+  // Quick edit inline
+  const handleQuickEdit = (
+    content: ContentItem | undefined,
+    categoryId: string,
+    date: Date,
+    newTitle: string
+  ) => {
+    if (content) {
+      // Update existing content
+      setContents((prev) =>
+        prev.map((c) => (c.id === content.id ? { ...c, title: newTitle } : c))
+      );
+      toast.success("Contenuto aggiornato");
+    } else {
+      // Create new content
+      const newContent: ContentItem = {
+        id: Date.now().toString(),
+        title: newTitle,
+        categoryId,
+        date,
+        published: false,
+      };
+      setContents((prev) => [...prev, newContent]);
+      toast.success("Contenuto creato");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <PlannerHeader
@@ -263,6 +294,15 @@ const Index = () => {
             onCreateSeries={handleCreateSeries}
           />
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setInfoDialogOpen(true)}
+          className="gap-2"
+        >
+          <Info className="h-4 w-4" />
+          Scorciatoie
+        </Button>
       </div>
 
       <PlannerFilters
@@ -288,6 +328,7 @@ const Index = () => {
             onDrop={handleDrop}
             onDuplicate={handleDuplicate}
             onTogglePublished={handleTogglePublished}
+            onQuickEdit={handleQuickEdit}
           />
         ))}
       </main>
@@ -301,6 +342,12 @@ const Index = () => {
         preselectedDate={preselectedDate}
         onSave={handleSaveContent}
         onDelete={handleDeleteContent}
+        allContents={contents}
+      />
+
+      <InfoDialog
+        open={infoDialogOpen}
+        onOpenChange={setInfoDialogOpen}
       />
     </div>
   );
