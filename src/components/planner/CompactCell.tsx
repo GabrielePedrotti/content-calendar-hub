@@ -156,11 +156,13 @@ export const CompactCell = ({
     return (
       <div
         ref={cellRef}
+        style={{
+          backgroundColor: contents.length > 0 ? `hsl(${category.color} / 0.35)` : `hsl(${category.color} / 0.08)`,
+        }}
         className={cn(
           "h-[44px] border transition-all relative flex items-center justify-center px-2",
           isSunday && "bg-sunday-accent",
           isVacation && "bg-vacation-overlay",
-          contents.length > 0 && `bg-[hsl(${category.color}/0.15)]`,
           "ring-2 ring-primary"
         )}
         onDragOver={handleDragOver}
@@ -183,15 +185,32 @@ export const CompactCell = ({
   const visibleContents = contents.length <= 3 ? contents : contents.slice(0, 3);
   const remainingCount = Math.max(0, contents.length - 3);
 
+  const getCellStyle = () => {
+    const baseStyle: React.CSSProperties = {};
+    
+    if (contents.length === 0) {
+      // Empty cell - very transparent
+      baseStyle.backgroundColor = `hsl(${category.color} / 0.08)`;
+    } else {
+      // Cell with content - more visible
+      baseStyle.backgroundColor = `hsl(${category.color} / 0.35)`;
+      baseStyle.borderTopColor = `hsl(${category.color} / 0.6)`;
+      baseStyle.borderBottomColor = `hsl(${category.color} / 0.6)`;
+    }
+    
+    return baseStyle;
+  };
+
   return (
     <div
       ref={cellRef}
+      style={getCellStyle()}
       className={cn(
         "h-[44px] border cursor-pointer transition-all relative group flex flex-col items-center justify-center px-1.5 py-1",
         isSunday && "bg-sunday-accent/50",
         isVacation && "bg-vacation-overlay",
-        contents.length === 0 && `hover:bg-cell-hover border-grid-border bg-[hsl(${category.color}/0.08)]`,
-        contents.length > 0 && `bg-[hsl(${category.color}/0.35)] hover:bg-[hsl(${category.color}/0.45)] border-[hsl(${category.color}/0.6)] border-t-2 border-b-2`,
+        contents.length === 0 && "hover:bg-cell-hover border-grid-border",
+        contents.length > 0 && "border-t-2 border-b-2 hover:brightness-110",
         isDraggingOver && "ring-2 ring-primary",
         isHighlighted && "ring-2 ring-primary animate-pulse"
       )}
