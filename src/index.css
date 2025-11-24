@@ -50,6 +50,12 @@ All colors MUST be HSL.
     --grid-border: 220 15% 25%;
     --cell-hover: 220 15% 25%;
     --sunday-accent: 210 100% 60% / 0.1;
+    
+    /* Vacation colors */
+    --vacation-overlay: 270 50% 15%;
+    --vacation-accent: 270 60% 35%;
+    --vacation-foreground: 270 90% 90%;
+    --vacation-badge: 270 60% 25%;
   }
 }
 
@@ -61,7 +67,4 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
   }
-  --vacation-overlay: hsl(var(--destructive) / 0.05);
-  --vacation-accent: hsl(var(--destructive) / 0.2);
-  --vacation-text: hsl(var(--destructive-foreground));
 }

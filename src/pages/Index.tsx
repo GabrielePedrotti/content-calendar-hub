@@ -131,16 +131,59 @@ const Index = () => {
     content: Omit<ContentItem, "id"> & { id?: string }
   ) => {
     if (content.id) {
-      setContents((prev) =>
-        prev.map((c) => (c.id === content.id ? { ...content, id: content.id } : c))
-      );
+      // If updating content with a linkedContentId, create bidirectional link
+      const oldContent = contents.find((c) => c.id === content.id);
+      const isAddingLink = content.linkedContentId && oldContent?.linkedContentId !== content.linkedContentId;
+      const isRemovingLink = !content.linkedContentId && oldContent?.linkedContentId;
+
+      setContents((prev) => {
+        let updated = prev.map((c) => (c.id === content.id ? { ...content, id: content.id } : c));
+        
+        // Remove old bidirectional link if changing
+        if (oldContent?.linkedContentId && oldContent.linkedContentId !== content.linkedContentId) {
+          updated = updated.map((c) =>
+            c.id === oldContent.linkedContentId && c.linkedContentId === content.id
+              ? { ...c, linkedContentId: undefined }
+              : c
+          );
+        }
+        
+        // Add new bidirectional link
+        if (isAddingLink) {
+          updated = updated.map((c) =>
+            c.id === content.linkedContentId ? { ...c, linkedContentId: content.id } : c
+          );
+        }
+        
+        // Remove bidirectional link
+        if (isRemovingLink && oldContent.linkedContentId) {
+          updated = updated.map((c) =>
+            c.id === oldContent.linkedContentId && c.linkedContentId === content.id
+              ? { ...c, linkedContentId: undefined }
+              : c
+          );
+        }
+        
+        return updated;
+      });
       toast.success("Contenuto aggiornato");
     } else {
       const newContent: ContentItem = {
         ...content,
         id: Date.now().toString(),
       };
-      setContents((prev) => [...prev, newContent]);
+      
+      // If creating with a linkedContentId, create bidirectional link
+      if (newContent.linkedContentId) {
+        setContents((prev) => {
+          const updated = [...prev, newContent];
+          return updated.map((c) =>
+            c.id === newContent.linkedContentId ? { ...c, linkedContentId: newContent.id } : c
+          );
+        });
+      } else {
+        setContents((prev) => [...prev, newContent]);
+      }
       toast.success("Contenuto creato");
     }
   };
@@ -334,6 +377,15 @@ const Index = () => {
     date: Date,
     newTitle: string
   ) => {
+    // If title is empty, delete the content
+    if (!newTitle.trim()) {
+      if (content) {
+        setContents((prev) => prev.filter((c) => c.id !== content.id));
+        toast.success("Contenuto eliminato");
+      }
+      return;
+    }
+
     if (content) {
       // Update existing content
       setContents((prev) =>

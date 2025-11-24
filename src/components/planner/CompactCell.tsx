@@ -176,18 +176,18 @@ export const CompactCell = ({
     );
   }
 
-  const visibleContents = contents.slice(0, 3);
-  const remainingCount = contents.length - 3;
+  const visibleContents = contents.length <= 3 ? contents : contents.slice(0, 3);
+  const remainingCount = Math.max(0, contents.length - 3);
 
   return (
     <div
       ref={cellRef}
       className={cn(
         "h-[44px] border cursor-pointer transition-all relative group flex flex-col items-center justify-center px-1.5 py-1",
-        isSunday && "bg-sunday-accent",
+        isSunday && "bg-sunday-accent/50",
         isVacation && "bg-vacation-overlay",
-        contents.length === 0 && "hover:bg-cell-hover border-grid-border",
-        contents.length > 0 && `bg-[hsl(${category.color}/0.15)] hover:bg-[hsl(${category.color}/0.25)] border-[hsl(${category.color}/0.4)] border-t-2 border-b-2`,
+        contents.length === 0 && `hover:bg-cell-hover border-grid-border bg-[hsl(${category.color}/0.05)]`,
+        contents.length > 0 && `bg-[hsl(${category.color}/0.18)] hover:bg-[hsl(${category.color}/0.28)] border-[hsl(${category.color}/0.5)] border-t-2 border-b-2`,
         isDraggingOver && "ring-2 ring-primary",
         isHighlighted && "ring-2 ring-primary animate-pulse"
       )}
@@ -202,7 +202,7 @@ export const CompactCell = ({
         </span>
       ) : contents.length === 1 ? (
         // Single content - centered display
-        <div className="flex items-center gap-1.5 w-full">
+        <div className="flex items-center gap-1.5 w-full" data-content-id={contents[0].id}>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -322,11 +322,12 @@ export const CompactCell = ({
           </div>
         </div>
       ) : (
-        // Multiple contents - compact list
+        // Multiple contents - compact list (show all if 2-3, otherwise show 3 + remaining count)
         <div className="w-full space-y-0.5 overflow-hidden">
           {visibleContents.map((content) => (
             <div
               key={content.id}
+              data-content-id={content.id}
               className="flex items-center gap-1 text-[10px] hover:bg-background/20 px-0.5 rounded"
               draggable
               onDragStart={(e) => {
@@ -372,7 +373,7 @@ export const CompactCell = ({
                 e.stopPropagation();
                 onEdit();
               }}
-              className="text-[9px] text-muted-foreground hover:text-foreground w-full text-center py-0.5"
+              className="text-[9px] text-muted-foreground hover:text-foreground w-full text-center py-0.5 underline"
             >
               +{remainingCount} altri...
             </button>
