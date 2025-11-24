@@ -11,6 +11,7 @@ export interface ContentItem {
   date: Date;
   published: boolean;
   notes?: string;
+  linkedContentId?: string;
 }
 
 export interface WeekDay {

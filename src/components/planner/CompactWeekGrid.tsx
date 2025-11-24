@@ -15,6 +15,7 @@ interface CompactWeekGridProps {
   onDrop: (categoryId: string, date: Date) => void;
   onDuplicate: (content: ContentItem, date: Date) => void;
   onTogglePublished: (content: ContentItem) => void;
+  onQuickEdit: (content: ContentItem | undefined, categoryId: string, date: Date, newTitle: string) => void;
 }
 
 export const CompactWeekGrid = ({
@@ -28,6 +29,7 @@ export const CompactWeekGrid = ({
   onDrop,
   onDuplicate,
   onTogglePublished,
+  onQuickEdit,
 }: CompactWeekGridProps) => {
   const getContentForCell = (categoryId: string, date: Date) => {
     return contents.find(
@@ -35,6 +37,15 @@ export const CompactWeekGrid = ({
         c.categoryId === categoryId &&
         format(c.date, "yyyy-MM-dd") === format(date, "yyyy-MM-dd")
     );
+  };
+
+  const getLinkedContent = (linkedContentId?: string) => {
+    if (!linkedContentId) return undefined;
+    return contents.find((c) => c.id === linkedContentId);
+  };
+
+  const getCategory = (categoryId: string) => {
+    return categories.find((cat) => cat.id === categoryId);
   };
 
   return (
@@ -83,6 +94,9 @@ export const CompactWeekGrid = ({
               </div>
               {weekDays.map((day) => {
                 const content = getContentForCell(category.id, day.date);
+                const linkedContent = getLinkedContent(content?.linkedContentId);
+                const linkedCategory = linkedContent ? getCategory(linkedContent.categoryId) : undefined;
+                
                 return (
                   <div key={day.date.toISOString()} className="flex-1 min-w-[100px]">
                     <CompactCell
@@ -96,6 +110,9 @@ export const CompactWeekGrid = ({
                       onDrop={() => onDrop(category.id, day.date)}
                       onDuplicate={(c) => onDuplicate(c, day.date)}
                       onTogglePublished={onTogglePublished}
+                      onQuickEdit={(newTitle) => onQuickEdit(content, category.id, day.date, newTitle)}
+                      linkedContent={linkedContent}
+                      linkedCategory={linkedCategory}
                     />
                   </div>
                 );
