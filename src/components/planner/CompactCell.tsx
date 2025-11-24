@@ -36,6 +36,7 @@ interface CompactCellProps {
   allCategories: Category[];
   highlightedContentId?: string | null;
   cellOpacity: { empty: number; filled: number };
+  maxContentsInDay: number;
 }
 
 export const CompactCell = ({
@@ -58,6 +59,7 @@ export const CompactCell = ({
   allCategories,
   highlightedContentId,
   cellOpacity,
+  maxContentsInDay,
 }: CompactCellProps) => {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -154,7 +156,7 @@ export const CompactCell = ({
 
   const isHighlighted = contents.some((c) => c.id === highlightedContentId);
 
-  const cellHeight = contents.length <= 1 ? "44px" : contents.length === 2 ? "60px" : contents.length === 3 ? "76px" : "92px";
+  const cellHeight = maxContentsInDay <= 1 ? "44px" : maxContentsInDay === 2 ? "60px" : maxContentsInDay === 3 ? "76px" : "92px";
 
   if (isEditing) {
     return (
