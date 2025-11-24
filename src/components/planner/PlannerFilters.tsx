@@ -16,6 +16,7 @@ interface PlannerFiltersProps {
   selectedWeek: number | null;
   onWeekChange: (week: number | null) => void;
   totalWeeks: number;
+  endlessMode: boolean;
 }
 
 export const PlannerFilters = ({
@@ -25,6 +26,7 @@ export const PlannerFilters = ({
   selectedWeek,
   onWeekChange,
   totalWeeks,
+  endlessMode,
 }: PlannerFiltersProps) => {
   return (
     <div className="flex flex-wrap items-end gap-4 p-4 border-b border-grid-border bg-card">
@@ -48,28 +50,30 @@ export const PlannerFilters = ({
         </Select>
       </div>
 
-      <div className="flex gap-2">
-        <Label className="text-xs mb-1.5 block w-full">Filtra per Settimana</Label>
-        <div className="flex gap-1">
-          <Button
-            variant={selectedWeek === null ? "default" : "outline"}
-            size="sm"
-            onClick={() => onWeekChange(null)}
-          >
-            Tutte
-          </Button>
-          {Array.from({ length: totalWeeks }, (_, i) => i + 1).map((week) => (
+      {!endlessMode && (
+        <div className="flex gap-2">
+          <Label className="text-xs mb-1.5 block w-full">Filtra per Settimana</Label>
+          <div className="flex gap-1">
             <Button
-              key={week}
-              variant={selectedWeek === week ? "default" : "outline"}
+              variant={selectedWeek === null ? "default" : "outline"}
               size="sm"
-              onClick={() => onWeekChange(week)}
+              onClick={() => onWeekChange(null)}
             >
-              S{week}
+              Tutte
             </Button>
-          ))}
+            {Array.from({ length: totalWeeks }, (_, i) => i + 1).map((week) => (
+              <Button
+                key={week}
+                variant={selectedWeek === week ? "default" : "outline"}
+                size="sm"
+                onClick={() => onWeekChange(week)}
+              >
+                S{week}
+              </Button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
