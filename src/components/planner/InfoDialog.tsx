@@ -21,40 +21,51 @@ export const InfoDialog = ({ open, onOpenChange }: InfoDialogProps) => {
             Scorciatoie e Comandi
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="space-y-3">
-            <h4 className="font-semibold text-sm">Modifica Contenuti</h4>
+        <div className="space-y-4">
+          <div>
+            <h3 className="font-semibold mb-2">Interazioni Celle</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>• <kbd className="px-2 py-1 bg-muted rounded text-xs">Click</kbd> su cella = modifica titolo inline</li>
-              <li>• <kbd className="px-2 py-1 bg-muted rounded text-xs">Shift</kbd> + <kbd className="px-2 py-1 bg-muted rounded text-xs">Click</kbd> o <kbd className="px-2 py-1 bg-muted rounded text-xs">Ctrl</kbd> + <kbd className="px-2 py-1 bg-muted rounded text-xs">Click</kbd> = apri dettagli completi</li>
-              <li>• <kbd className="px-2 py-1 bg-muted rounded text-xs">Invio</kbd> = salva modifiche</li>
-              <li>• <kbd className="px-2 py-1 bg-muted rounded text-xs">Esc</kbd> = annulla modifiche</li>
+              <li>• <strong>Click su cella vuota:</strong> inserimento titolo inline</li>
+              <li>• <strong>Click su contenuto:</strong> modifica titolo inline</li>
+              <li>• <strong>Shift/Ctrl/Alt + Click:</strong> apri popup dettagli completo</li>
+              <li>• <strong>Invio:</strong> salva modifica inline</li>
+              <li>• <strong>Esc:</strong> annulla modifica</li>
             </ul>
           </div>
 
-          <div className="space-y-3">
-            <h4 className="font-semibold text-sm">Stato Pubblicazione</h4>
+          <div>
+            <h3 className="font-semibold mb-2">Pubblicazione</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>• Click sull'indicatore <span className="inline-flex h-3 w-3 rounded-full bg-muted mx-1"></span> = cambia stato pubblicato/da fare</li>
-              <li>• Grigio = da fare</li>
-              <li>• Verde con spunta = pubblicato</li>
+              <li>• <strong>Click sul pallino di stato:</strong> cambia stato pubblicato/da fare</li>
+              <li>• <strong>Pallino grigio:</strong> contenuto da fare</li>
+              <li>• <strong>Pallino verde con spunta:</strong> contenuto pubblicato</li>
             </ul>
           </div>
 
-          <div className="space-y-3">
-            <h4 className="font-semibold text-sm">Drag & Drop</h4>
+          <div>
+            <h3 className="font-semibold mb-2">Drag & Drop</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>• Trascina contenuto su un'altra cella = sposta data/categoria</li>
-              <li>• Menu contestuale (⋮) → Duplica = copia contenuto</li>
+              <li>• <strong>Drag normale:</strong> sposta il contenuto in una nuova cella</li>
+              <li>• <strong>ALT + Drag:</strong> DUPLICA il contenuto nella nuova cella (mantiene l'originale)</li>
+              <li>• <strong>Drag su cella:</strong> cambia data e/o categoria</li>
             </ul>
           </div>
 
-          <div className="space-y-3">
-            <h4 className="font-semibold text-sm">Contenuti Collegati</h4>
+          <div>
+            <h3 className="font-semibold mb-2">Collegamenti</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>• Icona 🔗 accanto al titolo = contenuto collegato</li>
-              <li>• Hover sull'icona = vedi dettagli collegamento</li>
-              <li>• Nei dettagli avanzati puoi collegare/scollegare contenuti</li>
+              <li>• <strong>Icona link:</strong> indica contenuto collegato</li>
+              <li>• <strong>Hover su icona:</strong> mostra info contenuto collegato ed evidenzia la cella</li>
+              <li>• <strong>Click su icona:</strong> scrolla alla cella collegata</li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="font-semibold mb-2">Celle Multiple</h3>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li>• Ogni cella può contenere più contenuti</li>
+              <li>• Se più di 3, mostra "+N altri..."</li>
+              <li>• Click/drag funzionano sui singoli contenuti</li>
             </ul>
           </div>
         </div>

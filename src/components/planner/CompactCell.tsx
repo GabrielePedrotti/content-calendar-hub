@@ -1,7 +1,7 @@
 import { ContentItem, Category } from "@/types/planner";
 import { cn } from "@/lib/utils";
 import { useState, useRef, useEffect } from "react";
-import { Check, MoreVertical, Copy, Link2 } from "lucide-react";
+import { Check, MoreVertical, Copy, Link2, Plus } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,26 +17,33 @@ import {
 import { Input } from "@/components/ui/input";
 
 interface CompactCellProps {
-  content?: ContentItem;
+  contents: ContentItem[];
   category: Category;
   isSunday: boolean;
   date: Date;
-  onEdit: () => void;
-  onDragStart: (content: ContentItem) => void;
+  isVacation: boolean;
+  vacationLabel?: string;
+  onEdit: (content?: ContentItem) => void;
+  onDragStart: (content: ContentItem, isAltDrag: boolean) => void;
   onDragOver: (e: React.DragEvent) => void;
   onDrop: () => void;
   onDuplicate: (content: ContentItem) => void;
   onTogglePublished: (content: ContentItem) => void;
-  onQuickEdit: (newTitle: string) => void;
-  linkedContent?: ContentItem;
-  linkedCategory?: Category;
+  onQuickEdit: (content: ContentItem | undefined, newTitle: string) => void;
+  onLinkHover: (contentId: string | null) => void;
+  onLinkClick: (content: ContentItem) => void;
+  allContents: ContentItem[];
+  allCategories: Category[];
+  highlightedContentId?: string | null;
 }
 
 export const CompactCell = ({
-  content,
+  contents,
   category,
   isSunday,
   date,
+  isVacation,
+  vacationLabel,
   onEdit,
   onDragStart,
   onDragOver,
@@ -44,13 +51,18 @@ export const CompactCell = ({
   onDuplicate,
   onTogglePublished,
   onQuickEdit,
-  linkedContent,
-  linkedCategory,
+  onLinkHover,
+  onLinkClick,
+  allContents,
+  allCategories,
+  highlightedContentId,
 }: CompactCellProps) => {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [editingContent, setEditingContent] = useState<ContentItem | undefined>();
   const [editValue, setEditValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const cellRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -75,18 +87,20 @@ export const CompactCell = ({
     onDrop();
   };
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = (e: React.MouseEvent, content?: ContentItem) => {
     // Shift, Ctrl, or Alt + Click = open full details
     if (e.shiftKey || e.ctrlKey || e.altKey) {
-      onEdit();
+      onEdit(content);
       return;
     }
 
     // Normal click = inline edit
     if (content) {
+      setEditingContent(content);
       setEditValue(content.title);
       setIsEditing(true);
     } else {
+      setEditingContent(undefined);
       setEditValue("");
       setIsEditing(true);
     }
@@ -94,13 +108,15 @@ export const CompactCell = ({
 
   const handleSave = () => {
     if (editValue.trim()) {
-      onQuickEdit(editValue.trim());
+      onQuickEdit(editingContent, editValue.trim());
     }
     setIsEditing(false);
+    setEditingContent(undefined);
   };
 
   const handleCancel = () => {
     setIsEditing(false);
+    setEditingContent(undefined);
     setEditValue("");
   };
 
@@ -114,20 +130,33 @@ export const CompactCell = ({
     }
   };
 
-  const handleTogglePublished = (e: React.MouseEvent) => {
+  const handleTogglePublished = (e: React.MouseEvent, content: ContentItem) => {
     e.stopPropagation();
-    if (content) {
-      onTogglePublished(content);
-    }
+    onTogglePublished(content);
   };
+
+  const getLinkedContent = (linkedId?: string) => {
+    if (!linkedId) return null;
+    return allContents.find((c) => c.id === linkedId);
+  };
+
+  const getLinkedCategory = (content: ContentItem) => {
+    const linked = getLinkedContent(content.linkedContentId);
+    if (!linked) return null;
+    return allCategories.find((cat) => cat.id === linked.categoryId);
+  };
+
+  const isHighlighted = contents.some((c) => c.id === highlightedContentId);
 
   if (isEditing) {
     return (
       <div
+        ref={cellRef}
         className={cn(
-          "h-[44px] border border-grid-border transition-all relative flex items-center justify-center px-2",
+          "h-[44px] border transition-all relative flex items-center justify-center px-2",
           isSunday && "bg-sunday-accent",
-          content && `bg-[hsl(${category.color}/0.15)]`,
+          isVacation && "bg-vacation-overlay",
+          contents.length > 0 && `bg-[hsl(${category.color}/0.15)]`,
           "ring-2 ring-primary"
         )}
         onDragOver={handleDragOver}
@@ -147,33 +176,41 @@ export const CompactCell = ({
     );
   }
 
+  const visibleContents = contents.slice(0, 3);
+  const remainingCount = contents.length - 3;
+
   return (
     <div
+      ref={cellRef}
       className={cn(
-        "h-[44px] border cursor-pointer transition-all relative group flex items-center justify-center px-2",
+        "h-[44px] border cursor-pointer transition-all relative group flex flex-col items-center justify-center px-1.5 py-1",
         isSunday && "bg-sunday-accent",
-        !content && "hover:bg-cell-hover border-grid-border",
-        content && `bg-[hsl(${category.color}/0.15)] hover:bg-[hsl(${category.color}/0.25)] border-[hsl(${category.color}/0.4)] border-t-2 border-b-2`,
-        isDraggingOver && "ring-2 ring-primary"
+        isVacation && "bg-vacation-overlay",
+        contents.length === 0 && "hover:bg-cell-hover border-grid-border",
+        contents.length > 0 && `bg-[hsl(${category.color}/0.15)] hover:bg-[hsl(${category.color}/0.25)] border-[hsl(${category.color}/0.4)] border-t-2 border-b-2`,
+        isDraggingOver && "ring-2 ring-primary",
+        isHighlighted && "ring-2 ring-primary animate-pulse"
       )}
-      onClick={handleClick}
+      onClick={(e) => handleClick(e)}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      draggable={!!content}
-      onDragStart={() => content && onDragStart(content)}
     >
-      {content ? (
+      {contents.length === 0 ? (
+        <span className="text-[10px] text-muted-foreground/0 group-hover:text-muted-foreground/60 transition-colors">
+          +
+        </span>
+      ) : contents.length === 1 ? (
+        // Single content - centered display
         <div className="flex items-center gap-1.5 w-full">
-          {/* Publication status indicator */}
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
-                  onClick={handleTogglePublished}
+                  onClick={(e) => handleTogglePublished(e, contents[0])}
                   className="flex-shrink-0 hover:scale-110 transition-transform"
                 >
-                  {content.published ? (
+                  {contents[0].published ? (
                     <div className="h-3 w-3 rounded-full bg-green-500 flex items-center justify-center">
                       <Check className="h-2 w-2 text-white" strokeWidth={3} />
                     </div>
@@ -184,52 +221,75 @@ export const CompactCell = ({
               </TooltipTrigger>
               <TooltipContent>
                 <p className="text-xs">
-                  {content.published ? "Pubblicato" : "Da fare"}
+                  {contents[0].published ? "Pubblicato" : "Da fare"}
                 </p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
 
-          {/* Title */}
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className={cn(
-                  "text-xs font-medium truncate flex-1 text-center",
-                  content.published && "opacity-80"
-                )}>
-                  {content.title}
+                <span
+                  className={cn(
+                    "text-xs font-medium truncate flex-1 text-center",
+                    contents[0].published && "opacity-80"
+                  )}
+                  draggable
+                  onDragStart={(e) => onDragStart(contents[0], e.altKey)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleClick(e, contents[0]);
+                  }}
+                >
+                  {contents[0].title}
                 </span>
               </TooltipTrigger>
               <TooltipContent>
-                <p className="max-w-[300px]">{content.title}</p>
-                {content.notes && (
+                <p className="max-w-[300px]">{contents[0].title}</p>
+                {contents[0].notes && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    {content.notes}
+                    {contents[0].notes}
                   </p>
                 )}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
 
-          {/* Linked content indicator */}
-          {content.linkedContentId && linkedContent && (
+          {contents[0].linkedContentId && (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Link2 className="h-3 w-3 text-primary flex-shrink-0" />
+                  <button
+                    onMouseEnter={() => onLinkHover(contents[0].linkedContentId!)}
+                    onMouseLeave={() => onLinkHover(null)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onLinkClick(contents[0]);
+                    }}
+                    className="flex-shrink-0"
+                  >
+                    <Link2 className="h-3 w-3 text-primary" />
+                  </button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p className="text-xs font-semibold">Collegato a:</p>
-                  <p className="text-xs">
-                    {linkedCategory?.name} – {linkedContent.title}
-                  </p>
+                  {(() => {
+                    const linked = getLinkedContent(contents[0].linkedContentId);
+                    const linkedCat = linked ? allCategories.find((cat) => cat.id === linked.categoryId) : null;
+                    return (
+                      <>
+                        <p className="text-xs font-semibold">Collegato a:</p>
+                        <p className="text-xs">
+                          {linkedCat?.name} – {linked?.title}
+                        </p>
+                      </>
+                    );
+                  })()}
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           )}
 
-          {/* Actions menu */}
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <DropdownMenu>
               <DropdownMenuTrigger
@@ -239,28 +299,85 @@ export const CompactCell = ({
                 <MoreVertical className="h-3 w-3" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={(e) => {
-                  e.stopPropagation();
-                  onDuplicate(content);
-                }}>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDuplicate(contents[0]);
+                  }}
+                >
                   <Copy className="h-4 w-4 mr-2" />
                   Duplica
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={(e) => {
-                  e.stopPropagation();
-                  onTogglePublished(content);
-                }}>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onTogglePublished(contents[0]);
+                  }}
+                >
                   <Check className="h-4 w-4 mr-2" />
-                  {content.published ? "Segna non pubblicato" : "Segna pubblicato"}
+                  {contents[0].published ? "Segna non pubblicato" : "Segna pubblicato"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </div>
       ) : (
-        <span className="text-[10px] text-muted-foreground/0 group-hover:text-muted-foreground/60 transition-colors">
-          +
-        </span>
+        // Multiple contents - compact list
+        <div className="w-full space-y-0.5 overflow-hidden">
+          {visibleContents.map((content) => (
+            <div
+              key={content.id}
+              className="flex items-center gap-1 text-[10px] hover:bg-background/20 px-0.5 rounded"
+              draggable
+              onDragStart={(e) => {
+                e.stopPropagation();
+                onDragStart(content, e.altKey);
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleClick(e, content);
+              }}
+            >
+              <button
+                onClick={(e) => handleTogglePublished(e, content)}
+                className="flex-shrink-0"
+              >
+                {content.published ? (
+                  <div className="h-2 w-2 rounded-full bg-green-500 flex items-center justify-center">
+                    <Check className="h-1.5 w-1.5 text-white" strokeWidth={3} />
+                  </div>
+                ) : (
+                  <div className="h-2 w-2 rounded-full bg-muted border border-muted-foreground/30" />
+                )}
+              </button>
+              <span className="truncate flex-1 font-medium">{content.title}</span>
+              {content.linkedContentId && (
+                <button
+                  onMouseEnter={() => onLinkHover(content.linkedContentId!)}
+                  onMouseLeave={() => onLinkHover(null)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onLinkClick(content);
+                  }}
+                  className="flex-shrink-0"
+                >
+                  <Link2 className="h-2 w-2 text-primary" />
+                </button>
+              )}
+            </div>
+          ))}
+          {remainingCount > 0 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="text-[9px] text-muted-foreground hover:text-foreground w-full text-center py-0.5"
+            >
+              +{remainingCount} altri...
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
