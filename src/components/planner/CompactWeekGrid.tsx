@@ -21,6 +21,7 @@ interface CompactWeekGridProps {
   onLinkClick: (content: ContentItem) => void;
   highlightedContentId?: string | null;
   cellOpacity: { empty: number; filled: number };
+  endlessMode: boolean;
 }
 
 export const CompactWeekGrid = ({
@@ -40,12 +41,18 @@ export const CompactWeekGrid = ({
   onLinkClick,
   highlightedContentId,
   cellOpacity,
+  endlessMode,
 }: CompactWeekGridProps) => {
   const getVacationForDate = (date: Date) => {
     return vacations.find((v) =>
       isWithinInterval(date, { start: v.startDate, end: v.endDate })
     );
   };
+
+  // Determina il mese di riferimento per le celle (in modalità endless)
+  const referenceMonth = endlessMode && weekDays.length > 0 
+    ? weekDays.find(day => day.date.getDate() > 7)?.date || weekDays[3].date 
+    : null;
 
   // Calcola il numero massimo di contenuti per ogni riga di categoria
   const getMaxContentsInRow = (categoryId: string) => {
@@ -149,6 +156,12 @@ export const CompactWeekGrid = ({
                       (c) => c.categoryId === category.id && isSameDay(c.date, day.date)
                     );
                     const vacationForDay = getVacationForDate(day.date);
+                    
+                    // In modalità endless, disabilita celle che non appartengono al mese di riferimento
+                    const isDisabled = endlessMode && referenceMonth 
+                      ? day.date.getMonth() !== referenceMonth.getMonth() || 
+                        day.date.getFullYear() !== referenceMonth.getFullYear()
+                      : false;
 
                     return (
                       <CompactCell
@@ -177,6 +190,7 @@ export const CompactWeekGrid = ({
                         highlightedContentId={highlightedContentId}
                         cellOpacity={cellOpacity}
                         maxContentsInRow={maxInRow}
+                        isDisabled={isDisabled}
                       />
                     );
                   })}

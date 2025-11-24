@@ -554,6 +554,7 @@ const Index = () => {
             selectedWeek={selectedWeek}
             onWeekChange={setSelectedWeek}
             totalWeeks={weeks.length}
+            endlessMode={endlessMode}
           />
 
           <main 
@@ -589,6 +590,7 @@ const Index = () => {
                         onLinkClick={handleLinkClick}
                         highlightedContentId={highlightedContentId}
                         cellOpacity={cellOpacity}
+                        endlessMode={endlessMode}
                       />
                     </div>
                   );
@@ -615,6 +617,7 @@ const Index = () => {
                   onLinkClick={handleLinkClick}
                   highlightedContentId={highlightedContentId}
                   cellOpacity={cellOpacity}
+                  endlessMode={false}
                 />
               ))
             )}

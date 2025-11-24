@@ -37,6 +37,7 @@ interface CompactCellProps {
   highlightedContentId?: string | null;
   cellOpacity: { empty: number; filled: number };
   maxContentsInRow: number;
+  isDisabled?: boolean;
 }
 
 export const CompactCell = ({
@@ -60,6 +61,7 @@ export const CompactCell = ({
   highlightedContentId,
   cellOpacity,
   maxContentsInRow,
+  isDisabled = false,
 }: CompactCellProps) => {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -92,6 +94,8 @@ export const CompactCell = ({
   };
 
   const handleClick = (e: React.MouseEvent, content?: ContentItem) => {
+    if (isDisabled) return;
+    
     // Shift, Ctrl, or Alt + Click = open full details
     if (e.shiftKey || e.ctrlKey || e.altKey) {
       onEdit(content);
@@ -220,19 +224,27 @@ export const CompactCell = ({
         height: cellHeight,
       }}
       className={cn(
-        "border-l border-r border-grid-border cursor-pointer transition-all relative group flex flex-col items-center justify-center px-1.5 py-1",
-        contents.length === 0 && "hover:brightness-110",
-        contents.length > 0 && "hover:brightness-125",
+        "border-l border-r border-grid-border transition-all relative group flex flex-col items-center justify-center px-1.5 py-1",
+        isDisabled 
+          ? "opacity-30 cursor-not-allowed bg-muted/10" 
+          : "cursor-pointer",
+        !isDisabled && contents.length === 0 && "hover:brightness-110",
+        !isDisabled && contents.length > 0 && "hover:brightness-125",
         isDraggingOver && "ring-2 ring-primary",
         isHighlighted && "ring-2 ring-primary animate-pulse"
       )}
-      onClick={(e) => handleClick(e)}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
+      onClick={(e) => !isDisabled && handleClick(e)}
+      onDragOver={!isDisabled ? handleDragOver : undefined}
+      onDragLeave={!isDisabled ? handleDragLeave : undefined}
+      onDrop={!isDisabled ? handleDrop : undefined}
     >
       {contents.length === 0 ? (
-        <span className="text-[10px] text-muted-foreground/0 group-hover:text-muted-foreground/60 transition-colors">
+        <span className={cn(
+          "text-[10px] transition-colors",
+          isDisabled 
+            ? "text-muted-foreground/20" 
+            : "text-muted-foreground/0 group-hover:text-muted-foreground/60"
+        )}>
           +
         </span>
       ) : contents.length === 1 ? (
