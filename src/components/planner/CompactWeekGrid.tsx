@@ -22,6 +22,7 @@ interface CompactWeekGridProps {
   highlightedContentId?: string | null;
   cellOpacity: { empty: number; filled: number };
   endlessMode: boolean;
+  monthLabelDate?: Date;
 }
 
 export const CompactWeekGrid = ({
@@ -42,6 +43,7 @@ export const CompactWeekGrid = ({
   highlightedContentId,
   cellOpacity,
   endlessMode,
+  monthLabelDate,
 }: CompactWeekGridProps) => {
   const getVacationForDate = (date: Date) => {
     return vacations.find((v) =>
@@ -50,9 +52,7 @@ export const CompactWeekGrid = ({
   };
 
   // Determina il mese di riferimento per le celle (in modalità endless)
-  const referenceMonth = endlessMode && weekDays.length > 0 
-    ? weekDays.find(day => day.date.getDate() > 7)?.date || weekDays[3].date 
-    : null;
+  const referenceMonth = endlessMode && monthLabelDate ? monthLabelDate : null;
 
   // Calcola il numero massimo di contenuti per ogni riga di categoria
   const getMaxContentsInRow = (categoryId: string) => {

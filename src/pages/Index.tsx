@@ -601,6 +601,7 @@ const Index = () => {
                         highlightedContentId={highlightedContentId}
                         cellOpacity={cellOpacity}
                         endlessMode={endlessMode}
+                        monthLabelDate={week.monthLabelDate}
                       />
                     </div>
                   );
@@ -628,6 +629,7 @@ const Index = () => {
                   highlightedContentId={highlightedContentId}
                   cellOpacity={cellOpacity}
                   endlessMode={false}
+                  monthLabelDate={week.monthLabelDate}
                 />
               ))
             )}
