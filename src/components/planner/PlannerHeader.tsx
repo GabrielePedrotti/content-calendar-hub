@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Settings2 } from "lucide-react";
+import { Settings2, Infinity } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface PlannerHeaderProps {
   currentDate: Date;
@@ -13,6 +15,8 @@ interface PlannerHeaderProps {
   onAddContent: () => void;
   cellOpacity: { empty: number; filled: number };
   onOpacityChange: (opacity: { empty: number; filled: number }) => void;
+  endlessMode: boolean;
+  onEndlessModeChange: (enabled: boolean) => void;
 }
 
 export const PlannerHeader = ({
@@ -22,6 +26,8 @@ export const PlannerHeader = ({
   onAddContent,
   cellOpacity,
   onOpacityChange,
+  endlessMode,
+  onEndlessModeChange,
 }: PlannerHeaderProps) => {
   return (
     <header className="flex items-center justify-between p-6 border-b border-grid-border">
@@ -29,26 +35,41 @@ export const PlannerHeader = ({
         <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
           Planner Editoriale
         </h1>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onPreviousMonth}
-            className="hover:bg-cell-hover"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-          <span className="text-lg font-semibold min-w-[200px] text-center">
-            {format(currentDate, "MMMM yyyy", { locale: it })}
-          </span>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onNextMonth}
-            className="hover:bg-cell-hover"
-          >
-            <ChevronRight className="h-5 w-5" />
-          </Button>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 bg-muted/30 px-4 py-2 rounded-lg border border-border">
+            <Infinity className={endlessMode ? "h-5 w-5 text-primary animate-pulse" : "h-5 w-5 text-muted-foreground"} />
+            <Label htmlFor="endless-mode" className="text-sm font-medium cursor-pointer">
+              Modalità Endless
+            </Label>
+            <Switch
+              id="endless-mode"
+              checked={endlessMode}
+              onCheckedChange={onEndlessModeChange}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onPreviousMonth}
+              className="hover:bg-cell-hover"
+              disabled={endlessMode}
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <span className="text-lg font-semibold min-w-[200px] text-center">
+              {endlessMode ? "Scroll infinito" : format(currentDate, "MMMM yyyy", { locale: it })}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onNextMonth}
+              className="hover:bg-cell-hover"
+              disabled={endlessMode}
+            >
+              <ChevronRight className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </div>
       <div className="flex items-center gap-2">
