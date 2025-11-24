@@ -47,6 +47,26 @@ export const CompactWeekGrid = ({
     );
   };
 
+  // Calcola il numero massimo di contenuti per ogni giorno (tra tutte le categorie)
+  const getMaxContentsForDay = (date: Date) => {
+    let max = 0;
+    categories.forEach((category) => {
+      const count = contents.filter(
+        (c) => c.categoryId === category.id && isSameDay(c.date, date)
+      ).length;
+      max = Math.max(max, count);
+    });
+    return max;
+  };
+
+  // Calcola l'altezza in base al numero massimo di contenuti
+  const getRowHeight = (maxContents: number) => {
+    if (maxContents <= 1) return "44px";
+    if (maxContents === 2) return "60px";
+    if (maxContents === 3) return "76px";
+    return "92px";
+  };
+
   return (
     <div className="mb-8">
       <div className="mb-2 text-sm font-semibold text-muted-foreground px-2">
@@ -123,6 +143,7 @@ export const CompactWeekGrid = ({
                     (c) => c.categoryId === category.id && isSameDay(c.date, day.date)
                   );
                   const vacationForDay = getVacationForDate(day.date);
+                  const maxContentsInDay = getMaxContentsForDay(day.date);
 
                   return (
                     <CompactCell
@@ -150,6 +171,7 @@ export const CompactWeekGrid = ({
                       allCategories={categories}
                       highlightedContentId={highlightedContentId}
                       cellOpacity={cellOpacity}
+                      maxContentsInDay={maxContentsInDay}
                     />
                   );
                 })}
