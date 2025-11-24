@@ -61,8 +61,11 @@ export const CompactWeekGrid = ({
             {categories.map((category) => (
               <div
                 key={category.id}
-                className="h-[44px] border-t border-grid-border flex items-center justify-center text-white font-semibold text-sm px-2"
-                style={{ backgroundColor: `hsl(${category.color})` }}
+                className="h-[44px] border-t border-grid-border flex items-center justify-center font-semibold text-sm px-2"
+                style={{ 
+                  backgroundColor: `hsl(${category.color} / 0.25)`,
+                  color: `hsl(${category.color.split(' ')[0]} ${category.color.split(' ')[1]} 70%)`
+                }}
               >
                 {category.name}
               </div>
