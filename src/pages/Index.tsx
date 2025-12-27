@@ -197,12 +197,12 @@ const Index = () => {
     toast.success("Logout effettuato");
   }, [wsLogout]);
 
-  // Richiedi dati quando l'utente è autenticato e connesso
+  // Richiedi dati appena la connessione WebSocket è stabilita
   useEffect(() => {
-    if (user && isConnected) {
+    if (isConnected) {
       requestData();
     }
-  }, [user, isConnected, requestData]);
+  }, [isConnected, requestData]);
 
   // Load cached data on mount (fallback offline)
   useEffect(() => {
@@ -377,8 +377,10 @@ const Index = () => {
       const isAddingLink = content.linkedContentId && oldContent?.linkedContentId !== content.linkedContentId;
       const isRemovingLink = !content.linkedContentId && oldContent?.linkedContentId;
 
+      const updatedContent = { ...content, id: content.id } as ContentItem;
+      
       setContents((prev) => {
-        let updated = prev.map((c) => (c.id === content.id ? { ...content, id: content.id } : c));
+        let updated = prev.map((c) => (c.id === content.id ? updatedContent : c));
         
         // Remove old bidirectional link if changing
         if (oldContent?.linkedContentId && oldContent.linkedContentId !== content.linkedContentId) {
@@ -407,6 +409,8 @@ const Index = () => {
         
         return updated;
       });
+      
+      syncContentUpdate(updatedContent);
       toast.success("Contenuto aggiornato");
     } else {
       const newContent: ContentItem = {
@@ -497,6 +501,8 @@ const Index = () => {
     }
 
     setContents((prev) => [...prev, ...newContents]);
+    // Sync each new content to WebSocket
+    newContents.forEach(content => syncContentCreate(content));
     toast.success(`Serie creata: ${newContents.length} contenuti aggiunti`);
   };
 
