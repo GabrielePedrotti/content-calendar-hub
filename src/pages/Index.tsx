@@ -39,6 +39,18 @@ import {
 import { it } from "date-fns/locale";
 import { toast } from "sonner";
 
+// Helper per parsare le date dalle stringhe JSON
+const parseContentDate = (content: any): ContentItem => ({
+  ...content,
+  date: new Date(content.date),
+});
+
+const parseVacationDates = (vacation: any): VacationPeriod => ({
+  ...vacation,
+  startDate: new Date(vacation.startDate),
+  endDate: new Date(vacation.endDate),
+});
+
 // WebSocket URL from environment variable, fallback to localStorage
 const WS_URL = import.meta.env.VITE_WS_URL as string | undefined;
 
@@ -99,17 +111,18 @@ const Index = () => {
   }, []);
 
   const handleInitialData = useCallback((data: InitialDataPayload) => {
-    if (data.contents) setContents(data.contents);
+    if (data.contents) setContents(data.contents.map(parseContentDate));
     if (data.categories && data.categories.length > 0) setCategories(data.categories);
-    if (data.vacations) setVacations(data.vacations);
+    if (data.vacations) setVacations(data.vacations.map(parseVacationDates));
     toast.success("Dati sincronizzati");
   }, []);
 
   const handleContentChange = useCallback((type: 'created' | 'updated' | 'deleted', payload: ContentItem | { id: string }) => {
     if (type === 'created') {
-      setContents(prev => [...prev, payload as ContentItem]);
+      setContents(prev => [...prev, parseContentDate(payload)]);
     } else if (type === 'updated') {
-      setContents(prev => prev.map(c => c.id === (payload as ContentItem).id ? payload as ContentItem : c));
+      const parsed = parseContentDate(payload);
+      setContents(prev => prev.map(c => c.id === parsed.id ? parsed : c));
     } else if (type === 'deleted') {
       setContents(prev => prev.filter(c => c.id !== (payload as { id: string }).id));
     }
@@ -127,7 +140,7 @@ const Index = () => {
 
   const handleVacationChange = useCallback((type: 'created' | 'deleted', payload: VacationPeriod | { id: string }) => {
     if (type === 'created') {
-      setVacations(prev => [...prev, payload as VacationPeriod]);
+      setVacations(prev => [...prev, parseVacationDates(payload)]);
     } else if (type === 'deleted') {
       setVacations(prev => prev.filter(v => v.id !== (payload as { id: string }).id));
     }
@@ -207,9 +220,9 @@ const Index = () => {
   // Load cached data on mount (fallback offline)
   useEffect(() => {
     const cachedData = loadFromLocalCache();
-    if (cachedData.contents.length > 0) setContents(cachedData.contents);
+    if (cachedData.contents.length > 0) setContents(cachedData.contents.map(parseContentDate));
     if (cachedData.categories.length > 0) setCategories(cachedData.categories);
-    if (cachedData.vacations.length > 0) setVacations(cachedData.vacations);
+    if (cachedData.vacations.length > 0) setVacations(cachedData.vacations.map(parseVacationDates));
   }, [loadFromLocalCache]);
 
   // Save data to cache when it changes
