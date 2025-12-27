@@ -51,8 +51,8 @@ const parseVacationDates = (vacation: any): VacationPeriod => ({
   endDate: new Date(vacation.endDate),
 });
 
-// WebSocket URL from environment variable, fallback to localStorage
-const WS_URL = import.meta.env.VITE_WS_URL as string | undefined;
+// WebSocket URL
+const WS_URL = "wss://planner.hemerald.net/wss/";
 
 const Index = () => {
   // WebSocket URL: env var takes priority, then localStorage
