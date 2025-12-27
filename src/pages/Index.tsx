@@ -9,10 +9,13 @@ import { PlannerFilters } from "@/components/planner/PlannerFilters";
 import { InfoDialog } from "@/components/planner/InfoDialog";
 import { VacationManager } from "@/components/planner/VacationManager";
 import { TaskView } from "@/components/planner/TaskView";
+import { LoginDialog } from "@/components/auth/LoginDialog";
 import { Category, ContentItem, WeekDay, SeriesConfig, VacationPeriod } from "@/types/planner";
 import { Button } from "@/components/ui/button";
-import { Info, Calendar, ListTodo } from "lucide-react";
+import { Info, Calendar, ListTodo, LogOut, Wifi, WifiOff } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/hooks/useAuth";
+import { useSync } from "@/hooks/useSync";
 import {
   startOfMonth,
   endOfMonth,
@@ -35,6 +38,9 @@ import { it } from "date-fns/locale";
 import { toast } from "sonner";
 
 const Index = () => {
+  // Auth
+  const { user, isAuthenticated, login, logout } = useAuth();
+
   const [currentDate, setCurrentDate] = useState(new Date());
   const [dialogOpen, setDialogOpen] = useState(false);
   const [infoDialogOpen, setInfoDialogOpen] = useState(false);
@@ -69,6 +75,40 @@ const Index = () => {
 
   const [contents, setContents] = useState<ContentItem[]>([]);
   const [vacations, setVacations] = useState<VacationPeriod[]>([]);
+
+  // Sync hook - sostituisci wsUrl con il tuo WebSocket URL quando pronto
+  const {
+    isConnected,
+    syncContentCreate,
+    syncContentUpdate,
+    syncContentDelete,
+    syncCategoryCreate,
+    syncCategoryUpdate,
+    syncCategoryDelete,
+    syncVacationCreate,
+    syncVacationDelete,
+    saveDataToCache,
+    loadDataFromCache,
+  } = useSync({
+    userId: user?.id || null,
+    wsUrl: undefined, // Inserisci qui l'URL del tuo WebSocket: "wss://tuo-server/ws"
+    onContentUpdate: setContents,
+    onCategoryUpdate: setCategories,
+    onVacationUpdate: setVacations,
+  });
+
+  // Load cached data on mount
+  useEffect(() => {
+    const cachedData = loadDataFromCache();
+    if (cachedData.contents.length > 0) setContents(cachedData.contents);
+    if (cachedData.categories.length > 0) setCategories(cachedData.categories);
+    if (cachedData.vacations.length > 0) setVacations(cachedData.vacations);
+  }, [loadDataFromCache]);
+
+  // Save data to cache when it changes
+  useEffect(() => {
+    saveDataToCache({ contents, categories, vacations });
+  }, [contents, categories, vacations, saveDataToCache]);
 
   const weeks = useMemo(() => {
     if (endlessMode) {
@@ -278,12 +318,14 @@ const Index = () => {
       } else {
         setContents((prev) => [...prev, newContent]);
       }
+      syncContentCreate(newContent);
       toast.success("Contenuto creato");
     }
   };
 
   const handleDeleteContent = (id: string) => {
     setContents((prev) => prev.filter((c) => c.id !== id));
+    syncContentDelete(id);
     toast.success("Contenuto eliminato");
   };
 
@@ -295,19 +337,23 @@ const Index = () => {
       color,
     };
     setCategories((prev) => [...prev, newCategory]);
+    syncCategoryCreate(newCategory);
     toast.success(`Categoria "${name}" aggiunta`);
   };
 
   const handleUpdateCategory = (id: string, name: string, color: string) => {
+    const updatedCategory = { id, name, color };
     setCategories((prev) =>
-      prev.map((cat) => (cat.id === id ? { ...cat, name, color } : cat))
+      prev.map((cat) => (cat.id === id ? updatedCategory : cat))
     );
+    syncCategoryUpdate(updatedCategory);
     toast.success(`Categoria aggiornata`);
   };
 
   const handleDeleteCategory = (id: string) => {
     setCategories((prev) => prev.filter((cat) => cat.id !== id));
     setContents((prev) => prev.filter((c) => c.categoryId !== id));
+    syncCategoryDelete(id);
     toast.success("Categoria eliminata");
   };
 
@@ -416,11 +462,13 @@ const Index = () => {
       label,
     };
     setVacations((prev) => [...prev, newVacation]);
+    syncVacationCreate(newVacation);
     toast.success(`Periodo "${label}" aggiunto`);
   };
 
   const handleDeleteVacation = (id: string) => {
     setVacations((prev) => prev.filter((v) => v.id !== id));
+    syncVacationDelete(id);
     toast.success("Periodo eliminato");
   };
 
@@ -501,46 +549,76 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <PlannerHeader
-        currentDate={currentDate}
-        onPreviousMonth={handlePreviousMonth}
-        onNextMonth={handleNextMonth}
-        onAddContent={handleAddContent}
-        cellOpacity={cellOpacity}
-        onOpacityChange={setCellOpacity}
-        endlessMode={endlessMode}
-        onEndlessModeChange={handleEndlessModeToggle}
-      />
+    <>
+      <LoginDialog open={!isAuthenticated} onLogin={login} />
+      
+      <div className="min-h-screen bg-background text-foreground">
+        <PlannerHeader
+          currentDate={currentDate}
+          onPreviousMonth={handlePreviousMonth}
+          onNextMonth={handleNextMonth}
+          onAddContent={handleAddContent}
+          cellOpacity={cellOpacity}
+          onOpacityChange={setCellOpacity}
+          endlessMode={endlessMode}
+          onEndlessModeChange={handleEndlessModeToggle}
+        />
 
-      <div className="flex items-center justify-between px-6 py-3 border-b border-grid-border">
-        <div className="flex gap-2">
-          <CategoryManager
-            categories={categories}
-            onAddCategory={handleAddCategory}
-            onUpdateCategory={handleUpdateCategory}
-            onDeleteCategory={handleDeleteCategory}
-          />
-          <SeriesCreator
-            categories={categories}
-            onCreateSeries={handleCreateSeries}
-          />
-          <VacationManager
-            vacations={vacations}
-            onAddVacation={handleAddVacation}
-            onDeleteVacation={handleDeleteVacation}
-          />
+        <div className="flex items-center justify-between px-6 py-3 border-b border-grid-border">
+          <div className="flex gap-2">
+            <CategoryManager
+              categories={categories}
+              onAddCategory={handleAddCategory}
+              onUpdateCategory={handleUpdateCategory}
+              onDeleteCategory={handleDeleteCategory}
+            />
+            <SeriesCreator
+              categories={categories}
+              onCreateSeries={handleCreateSeries}
+            />
+            <VacationManager
+              vacations={vacations}
+              onAddVacation={handleAddVacation}
+              onDeleteVacation={handleDeleteVacation}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            {/* Connection status indicator */}
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              {isConnected ? (
+                <>
+                  <Wifi className="h-3 w-3 text-green-500" />
+                  <span>Connesso</span>
+                </>
+              ) : (
+                <>
+                  <WifiOff className="h-3 w-3 text-muted-foreground" />
+                  <span>Offline</span>
+                </>
+              )}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setInfoDialogOpen(true)}
+              className="gap-2"
+            >
+              <Info className="h-4 w-4" />
+              Scorciatoie
+            </Button>
+            {isAuthenticated && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={logout}
+                className="gap-2 text-muted-foreground"
+              >
+                <LogOut className="h-4 w-4" />
+                Esci
+              </Button>
+            )}
+          </div>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setInfoDialogOpen(true)}
-          className="gap-2"
-        >
-          <Info className="h-4 w-4" />
-          Scorciatoie
-        </Button>
-      </div>
 
       <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "planner" | "task")} className="w-full">
         <TabsList className="w-full justify-start rounded-none border-b h-auto p-0 bg-transparent">
@@ -660,7 +738,8 @@ const Index = () => {
         open={infoDialogOpen}
         onOpenChange={setInfoDialogOpen}
       />
-    </div>
+      </div>
+    </>
   );
 };
 
