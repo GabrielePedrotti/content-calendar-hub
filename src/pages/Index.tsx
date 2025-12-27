@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { PlannerHeader } from "@/components/planner/PlannerHeader";
 import { CompactWeekGrid } from "@/components/planner/CompactWeekGrid";
 import { MonthSeparator } from "@/components/planner/MonthSeparator";
@@ -11,11 +11,12 @@ import { VacationManager } from "@/components/planner/VacationManager";
 import { TaskView } from "@/components/planner/TaskView";
 import { LoginDialog } from "@/components/auth/LoginDialog";
 import { Category, ContentItem, WeekDay, SeriesConfig, VacationPeriod } from "@/types/planner";
+import { User } from "@/types/auth";
+import { InitialDataPayload } from "@/types/sync";
 import { Button } from "@/components/ui/button";
-import { Info, Calendar, ListTodo, LogOut, Wifi, WifiOff } from "lucide-react";
+import { Info, Calendar, ListTodo, LogOut, Wifi, WifiOff, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuth } from "@/hooks/useAuth";
-import { useSync } from "@/hooks/useSync";
+import { useWebSocket } from "@/hooks/useWebSocket";
 import {
   startOfMonth,
   endOfMonth,
@@ -37,9 +38,14 @@ import {
 import { it } from "date-fns/locale";
 import { toast } from "sonner";
 
+// URL del WebSocket - impostalo con il tuo server
+const WS_URL: string | null = null; // es: "wss://tuo-server.com/ws"
+
 const Index = () => {
-  // Auth
-  const { user, isAuthenticated, login, logout } = useAuth();
+  // Auth state
+  const [user, setUser] = useState<User | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -76,9 +82,66 @@ const Index = () => {
   const [contents, setContents] = useState<ContentItem[]>([]);
   const [vacations, setVacations] = useState<VacationPeriod[]>([]);
 
-  // Sync hook - sostituisci wsUrl con il tuo WebSocket URL quando pronto
+  // WebSocket callbacks
+  const handleAuthSuccess = useCallback((wsUser: User, token: string) => {
+    setUser(wsUser);
+    setAuthError(null);
+    setIsAuthenticating(false);
+    toast.success("Login effettuato");
+  }, []);
+
+  const handleAuthError = useCallback((error: string) => {
+    setAuthError(error);
+    setIsAuthenticating(false);
+  }, []);
+
+  const handleInitialData = useCallback((data: InitialDataPayload) => {
+    if (data.contents) setContents(data.contents);
+    if (data.categories && data.categories.length > 0) setCategories(data.categories);
+    if (data.vacations) setVacations(data.vacations);
+    toast.success("Dati sincronizzati");
+  }, []);
+
+  const handleContentChange = useCallback((type: 'created' | 'updated' | 'deleted', payload: ContentItem | { id: string }) => {
+    if (type === 'created') {
+      setContents(prev => [...prev, payload as ContentItem]);
+    } else if (type === 'updated') {
+      setContents(prev => prev.map(c => c.id === (payload as ContentItem).id ? payload as ContentItem : c));
+    } else if (type === 'deleted') {
+      setContents(prev => prev.filter(c => c.id !== (payload as { id: string }).id));
+    }
+  }, []);
+
+  const handleCategoryChange = useCallback((type: 'created' | 'updated' | 'deleted', payload: Category | { id: string }) => {
+    if (type === 'created') {
+      setCategories(prev => [...prev, payload as Category]);
+    } else if (type === 'updated') {
+      setCategories(prev => prev.map(c => c.id === (payload as Category).id ? payload as Category : c));
+    } else if (type === 'deleted') {
+      setCategories(prev => prev.filter(c => c.id !== (payload as { id: string }).id));
+    }
+  }, []);
+
+  const handleVacationChange = useCallback((type: 'created' | 'deleted', payload: VacationPeriod | { id: string }) => {
+    if (type === 'created') {
+      setVacations(prev => [...prev, payload as VacationPeriod]);
+    } else if (type === 'deleted') {
+      setVacations(prev => prev.filter(v => v.id !== (payload as { id: string }).id));
+    }
+  }, []);
+
+  const handleWsError = useCallback((error: string) => {
+    toast.error(error);
+  }, []);
+
+  // WebSocket hook
   const {
     isConnected,
+    isConnecting,
+    pendingEventsCount,
+    login: wsLogin,
+    logout: wsLogout,
+    requestData,
     syncContentCreate,
     syncContentUpdate,
     syncContentDelete,
@@ -87,28 +150,69 @@ const Index = () => {
     syncCategoryDelete,
     syncVacationCreate,
     syncVacationDelete,
-    saveDataToCache,
-    loadDataFromCache,
-  } = useSync({
-    userId: user?.id || null,
-    wsUrl: undefined, // Inserisci qui l'URL del tuo WebSocket: "wss://tuo-server/ws"
-    onContentUpdate: setContents,
-    onCategoryUpdate: setCategories,
-    onVacationUpdate: setVacations,
+    saveToLocalCache,
+    loadFromLocalCache,
+  } = useWebSocket({
+    wsUrl: WS_URL,
+    onAuthSuccess: handleAuthSuccess,
+    onAuthError: handleAuthError,
+    onInitialData: handleInitialData,
+    onContentChange: handleContentChange,
+    onCategoryChange: handleCategoryChange,
+    onVacationChange: handleVacationChange,
+    onError: handleWsError,
   });
 
-  // Load cached data on mount
+  // Login handler
+  const handleLogin = useCallback((email: string, password: string) => {
+    setIsAuthenticating(true);
+    setAuthError(null);
+    
+    if (WS_URL) {
+      // Login via WebSocket
+      wsLogin(email, password);
+    } else {
+      // Fallback: login locale (demo mode)
+      setTimeout(() => {
+        setUser({
+          id: crypto.randomUUID(),
+          email,
+          name: email.split('@')[0],
+        });
+        setIsAuthenticating(false);
+        toast.success("Login effettuato (modalità offline)");
+      }, 500);
+    }
+  }, [wsLogin]);
+
+  // Logout handler
+  const handleLogout = useCallback(() => {
+    if (WS_URL) {
+      wsLogout();
+    }
+    setUser(null);
+    toast.success("Logout effettuato");
+  }, [wsLogout]);
+
+  // Richiedi dati quando l'utente è autenticato e connesso
   useEffect(() => {
-    const cachedData = loadDataFromCache();
+    if (user && isConnected) {
+      requestData();
+    }
+  }, [user, isConnected, requestData]);
+
+  // Load cached data on mount (fallback offline)
+  useEffect(() => {
+    const cachedData = loadFromLocalCache();
     if (cachedData.contents.length > 0) setContents(cachedData.contents);
     if (cachedData.categories.length > 0) setCategories(cachedData.categories);
     if (cachedData.vacations.length > 0) setVacations(cachedData.vacations);
-  }, [loadDataFromCache]);
+  }, [loadFromLocalCache]);
 
   // Save data to cache when it changes
   useEffect(() => {
-    saveDataToCache({ contents, categories, vacations });
-  }, [contents, categories, vacations, saveDataToCache]);
+    saveToLocalCache({ contents, categories, vacations });
+  }, [contents, categories, vacations, saveToLocalCache]);
 
   const weeks = useMemo(() => {
     if (endlessMode) {
@@ -550,7 +654,12 @@ const Index = () => {
 
   return (
     <>
-      <LoginDialog open={!isAuthenticated} onLogin={login} />
+      <LoginDialog 
+        open={!user} 
+        onLogin={handleLogin} 
+        isLoading={isAuthenticating}
+        error={authError}
+      />
       
       <div className="min-h-screen bg-background text-foreground">
         <PlannerHeader
@@ -585,7 +694,12 @@ const Index = () => {
           <div className="flex items-center gap-2">
             {/* Connection status indicator */}
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              {isConnected ? (
+              {isConnecting ? (
+                <>
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <span>Connessione...</span>
+                </>
+              ) : isConnected ? (
                 <>
                   <Wifi className="h-3 w-3 text-green-500" />
                   <span>Connesso</span>
@@ -595,6 +709,9 @@ const Index = () => {
                   <WifiOff className="h-3 w-3 text-muted-foreground" />
                   <span>Offline</span>
                 </>
+              )}
+              {pendingEventsCount > 0 && (
+                <span className="ml-1 text-amber-500">({pendingEventsCount} in coda)</span>
               )}
             </div>
             <Button
@@ -606,11 +723,11 @@ const Index = () => {
               <Info className="h-4 w-4" />
               Scorciatoie
             </Button>
-            {isAuthenticated && (
+            {user && (
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={logout}
+                onClick={handleLogout}
                 className="gap-2 text-muted-foreground"
               >
                 <LogOut className="h-4 w-4" />

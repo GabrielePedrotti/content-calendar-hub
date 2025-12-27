@@ -9,43 +9,28 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
 
 interface LoginDialogProps {
   open: boolean;
-  onLogin: (email: string, password: string) => boolean;
+  onLogin: (email: string, password: string) => void;
+  isLoading?: boolean;
+  error?: string | null;
 }
 
-export const LoginDialog: React.FC<LoginDialogProps> = ({ open, onLogin }) => {
+export const LoginDialog: React.FC<LoginDialogProps> = ({ 
+  open, 
+  onLogin, 
+  isLoading = false,
+  error = null 
+}) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { toast } = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!email || !password) {
-      toast({
-        title: 'Errore',
-        description: 'Inserisci email e password',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    const success = onLogin(email, password);
-    if (success) {
-      toast({
-        title: 'Benvenuto!',
-        description: 'Login effettuato con successo',
-      });
-    } else {
-      toast({
-        title: 'Errore',
-        description: 'Credenziali non valide',
-        variant: 'destructive',
-      });
-    }
+    if (!email || !password) return;
+    onLogin(email, password);
   };
 
   return (
@@ -66,6 +51,7 @@ export const LoginDialog: React.FC<LoginDialogProps> = ({ open, onLogin }) => {
               placeholder="email@esempio.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              disabled={isLoading}
             />
           </div>
           <div className="space-y-2">
@@ -76,10 +62,21 @@ export const LoginDialog: React.FC<LoginDialogProps> = ({ open, onLogin }) => {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              disabled={isLoading}
             />
           </div>
-          <Button type="submit" className="w-full">
-            Accedi
+          {error && (
+            <p className="text-sm text-destructive">{error}</p>
+          )}
+          <Button type="submit" className="w-full" disabled={isLoading || !email || !password}>
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Connessione...
+              </>
+            ) : (
+              'Accedi'
+            )}
           </Button>
         </form>
       </DialogContent>
