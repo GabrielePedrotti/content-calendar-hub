@@ -39,9 +39,12 @@ import {
 import { it } from "date-fns/locale";
 import { toast } from "sonner";
 
+// WebSocket URL from environment variable, fallback to localStorage
+const WS_URL = import.meta.env.VITE_WS_URL as string | undefined;
+
 const Index = () => {
-  // WebSocket URL from localStorage
-  const [wsUrl, setWsUrl] = useState<string | null>(() => getStoredWsUrl());
+  // WebSocket URL: env var takes priority, then localStorage
+  const [wsUrl, setWsUrl] = useState<string | null>(() => WS_URL || getStoredWsUrl());
   // Auth state
   const [user, setUser] = useState<User | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
