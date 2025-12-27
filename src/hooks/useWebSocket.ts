@@ -41,8 +41,16 @@ export const useWebSocket = ({
     const stored = localStorage.getItem(SYNC_STORAGE_KEY);
     if (stored) {
       try {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        // Assicurati che sia un array
+        if (Array.isArray(parsed)) {
+          return parsed;
+        }
+        // Se non è un array, pulisci e ritorna vuoto
+        localStorage.removeItem(SYNC_STORAGE_KEY);
+        return [];
       } catch {
+        localStorage.removeItem(SYNC_STORAGE_KEY);
         return [];
       }
     }
