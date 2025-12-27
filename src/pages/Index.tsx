@@ -10,6 +10,7 @@ import { InfoDialog } from "@/components/planner/InfoDialog";
 import { VacationManager } from "@/components/planner/VacationManager";
 import { TaskView } from "@/components/planner/TaskView";
 import { LoginDialog } from "@/components/auth/LoginDialog";
+import { WebSocketSettings, getStoredWsUrl } from "@/components/settings/WebSocketSettings";
 import { Category, ContentItem, WeekDay, SeriesConfig, VacationPeriod } from "@/types/planner";
 import { User } from "@/types/auth";
 import { InitialDataPayload } from "@/types/sync";
@@ -38,10 +39,9 @@ import {
 import { it } from "date-fns/locale";
 import { toast } from "sonner";
 
-// URL del WebSocket - impostalo con il tuo server
-const WS_URL: string | null = null; // es: "wss://tuo-server.com/ws"
-
 const Index = () => {
+  // WebSocket URL from localStorage
+  const [wsUrl, setWsUrl] = useState<string | null>(() => getStoredWsUrl());
   // Auth state
   const [user, setUser] = useState<User | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -153,7 +153,7 @@ const Index = () => {
     saveToLocalCache,
     loadFromLocalCache,
   } = useWebSocket({
-    wsUrl: WS_URL,
+    wsUrl,
     onAuthSuccess: handleAuthSuccess,
     onAuthError: handleAuthError,
     onInitialData: handleInitialData,
@@ -168,7 +168,7 @@ const Index = () => {
     setIsAuthenticating(true);
     setAuthError(null);
     
-    if (WS_URL) {
+    if (wsUrl) {
       // Login via WebSocket
       wsLogin(email, password);
     } else {
@@ -187,7 +187,7 @@ const Index = () => {
 
   // Logout handler
   const handleLogout = useCallback(() => {
-    if (WS_URL) {
+    if (wsUrl) {
       wsLogout();
     }
     setUser(null);
@@ -714,6 +714,10 @@ const Index = () => {
                 <span className="ml-1 text-amber-500">({pendingEventsCount} in coda)</span>
               )}
             </div>
+            <WebSocketSettings 
+              isConnected={isConnected} 
+              onUrlChange={setWsUrl} 
+            />
             <Button
               variant="outline"
               size="sm"
