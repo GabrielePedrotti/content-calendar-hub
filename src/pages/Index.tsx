@@ -528,16 +528,17 @@ const Index = () => {
         date,
       };
       setContents((prev) => [...prev, duplicated]);
+      syncContentCreate(duplicated);
       toast.success("Contenuto duplicato");
     } else {
       // Drag normale = Sposta
+      const movedContent: ContentItem = { ...draggedContent, categoryId, date };
       setContents((prev) =>
         prev.map((c) =>
-          c.id === draggedContent.id
-            ? { ...c, categoryId, date }
-            : c
+          c.id === draggedContent.id ? movedContent : c
         )
       );
+      syncContentUpdate(movedContent);
       toast.success("Contenuto spostato");
     }
     
@@ -553,16 +554,19 @@ const Index = () => {
       date: newDate,
     };
     setContents((prev) => [...prev, duplicated]);
+    syncContentCreate(duplicated);
     toast.success("Contenuto duplicato");
   };
 
   // Toggle pubblicato
   const handleTogglePublished = (content: ContentItem) => {
+    const updatedContent: ContentItem = { ...content, published: !content.published };
     setContents((prev) =>
       prev.map((c) =>
-        c.id === content.id ? { ...c, published: !c.published } : c
+        c.id === content.id ? updatedContent : c
       )
     );
+    syncContentUpdate(updatedContent);
     toast.success(content.published ? "Segnato come non pubblicato" : "Segnato come pubblicato");
   };
 
@@ -636,6 +640,7 @@ const Index = () => {
     if (!newTitle.trim()) {
       if (content) {
         setContents((prev) => prev.filter((c) => c.id !== content.id));
+        syncContentDelete(content.id);
         toast.success("Contenuto eliminato");
       }
       return;
@@ -643,9 +648,11 @@ const Index = () => {
 
     if (content) {
       // Update existing content
+      const updatedContent: ContentItem = { ...content, title: newTitle };
       setContents((prev) =>
-        prev.map((c) => (c.id === content.id ? { ...c, title: newTitle } : c))
+        prev.map((c) => (c.id === content.id ? updatedContent : c))
       );
+      syncContentUpdate(updatedContent);
       toast.success("Contenuto aggiornato");
     } else {
       // Create new content
@@ -657,6 +664,7 @@ const Index = () => {
         published: false,
       };
       setContents((prev) => [...prev, newContent]);
+      syncContentCreate(newContent);
       toast.success("Contenuto creato");
     }
   };
