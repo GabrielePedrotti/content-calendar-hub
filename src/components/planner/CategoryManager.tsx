@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Settings, Plus, Trash2, Pencil } from "lucide-react";
+import { Settings, Trash2, Pencil, GripVertical, Plus } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,12 +20,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { ColorPicker } from "./ColorPicker";
+import { cn } from "@/lib/utils";
 
 interface CategoryManagerProps {
   categories: Category[];
   onAddCategory: (name: string, color: string) => void;
   onUpdateCategory: (id: string, name: string, color: string) => void;
   onDeleteCategory: (id: string) => void;
+  onReorderCategories?: (categories: Category[]) => void;
 }
 
 export const CategoryManager = ({
@@ -33,6 +36,7 @@ export const CategoryManager = ({
   onAddCategory,
   onUpdateCategory,
   onDeleteCategory,
+  onReorderCategories,
 }: CategoryManagerProps) => {
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -40,6 +44,7 @@ export const CategoryManager = ({
   const [color, setColor] = useState("210 100% 50%");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
 
   const handleStartEdit = (category: Category) => {
     setEditingId(category.id);
@@ -80,6 +85,31 @@ export const CategoryManager = ({
     setCategoryToDelete(null);
   };
 
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    setDraggedId(id);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    if (!draggedId || draggedId === targetId) return;
+    
+    const draggedIndex = categories.findIndex((c) => c.id === draggedId);
+    const targetIndex = categories.findIndex((c) => c.id === targetId);
+    
+    if (draggedIndex === -1 || targetIndex === -1) return;
+    
+    const newCategories = [...categories];
+    const [removed] = newCategories.splice(draggedIndex, 1);
+    newCategories.splice(targetIndex, 0, removed);
+    
+    onReorderCategories?.(newCategories);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedId(null);
+  };
+
   return (
     <>
       <Button
@@ -100,7 +130,8 @@ export const CategoryManager = ({
           <div className="space-y-4">
             {/* Add/Edit Form */}
             <div className="border border-border rounded-lg p-4 space-y-3">
-              <h3 className="font-semibold text-sm">
+              <h3 className="font-semibold text-sm flex items-center gap-2">
+                <Plus className="h-4 w-4" />
                 {editingId ? "Modifica Categoria" : "Nuova Categoria"}
               </h3>
               <div className="grid gap-3">
@@ -114,22 +145,8 @@ export const CategoryManager = ({
                   />
                 </div>
                 <div>
-                  <Label htmlFor="cat-color">Colore (HSL)</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="cat-color"
-                      value={color}
-                      onChange={(e) => setColor(e.target.value)}
-                      placeholder="142 76% 45%"
-                    />
-                    <div
-                      className="w-12 h-10 rounded border border-border flex-shrink-0"
-                      style={{ backgroundColor: `hsl(${color})` }}
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Formato: "HUE SAT% LIGHT%" (es. 142 76% 45%)
-                  </p>
+                  <Label>Colore</Label>
+                  <ColorPicker value={color} onChange={setColor} />
                 </div>
               </div>
               <div className="flex gap-2">
@@ -146,18 +163,38 @@ export const CategoryManager = ({
 
             {/* Categories List */}
             <div className="space-y-2">
-              <h3 className="font-semibold text-sm">Categorie Esistenti</h3>
+              <h3 className="font-semibold text-sm flex items-center gap-2">
+                Categorie Esistenti
+                <span className="text-xs text-muted-foreground font-normal">
+                  (trascina per riordinare)
+                </span>
+              </h3>
               <div className="space-y-2 max-h-[300px] overflow-y-auto">
                 {categories.map((cat) => (
                   <div
                     key={cat.id}
-                    className="flex items-center gap-3 p-3 rounded border border-border hover:bg-muted/50"
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, cat.id)}
+                    onDragOver={(e) => handleDragOver(e, cat.id)}
+                    onDragEnd={handleDragEnd}
+                    className={cn(
+                      "flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-move",
+                      draggedId === cat.id && "opacity-50 ring-2 ring-primary"
+                    )}
+                    style={{
+                      borderLeftWidth: "4px",
+                      borderLeftColor: `hsl(${cat.color})`,
+                    }}
                   >
+                    <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                     <div
-                      className="w-6 h-6 rounded flex-shrink-0"
+                      className="w-8 h-8 rounded flex-shrink-0"
                       style={{ backgroundColor: `hsl(${cat.color})` }}
                     />
                     <span className="flex-1 font-medium">{cat.name}</span>
+                    <span className="text-xs text-muted-foreground font-mono">
+                      {cat.color}
+                    </span>
                     <Button
                       variant="ghost"
                       size="icon"
