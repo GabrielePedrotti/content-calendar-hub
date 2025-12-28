@@ -1,6 +1,6 @@
 import { WeekDay, Category, ContentItem, VacationPeriod } from "@/types/planner";
 import { CompactCell } from "./CompactCell";
-import { format, isWithinInterval, isSameDay } from "date-fns";
+import { format, isWithinInterval, isSameDay, isToday } from "date-fns";
 import { it } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
@@ -120,6 +120,8 @@ export const CompactWeekGrid = ({
                 : day.date.getMonth() === referenceMonth.getMonth() &&
                   day.date.getFullYear() === referenceMonth.getFullYear();
 
+            const isTodayDate = isToday(day.date);
+            
             return (
               <div
                 key={day.date.toISOString()}
@@ -127,16 +129,30 @@ export const CompactWeekGrid = ({
                   "p-1.5 text-center border-r border-grid-border last:border-r-0 border-b h-[60px] flex flex-col items-center justify-center relative gap-0.5",
                   day.isSunday && "bg-sunday-accent",
                   vacationForDay && "bg-vacation-accent border-vacation-accent",
-                  !isInReferenceMonth && "opacity-40"
+                  !isInReferenceMonth && "opacity-40",
+                  isTodayDate && "bg-[hsl(var(--today-accent)/0.15)] ring-2 ring-[hsl(var(--today-ring))] ring-inset"
                 )}
               >
                 {isInReferenceMonth ? (
                   <>
                     <div className="flex items-center gap-1">
-                      <div className="text-[10px] font-medium uppercase">
+                      <div className={cn(
+                        "text-[10px] font-medium uppercase",
+                        isTodayDate && "text-[hsl(var(--today-accent))]"
+                      )}>
                         {format(day.date, "EEE", { locale: it })}
                       </div>
-                      <div className="text-xl font-bold">{day.dayNumber}</div>
+                      <div className={cn(
+                        "text-xl font-bold",
+                        isTodayDate && "text-[hsl(var(--today-accent))]"
+                      )}>
+                        {day.dayNumber}
+                      </div>
+                      {isTodayDate && (
+                        <div className="absolute top-1 right-1 text-[8px] font-bold bg-[hsl(var(--today-accent))] text-background px-1.5 py-0.5 rounded">
+                          OGGI
+                        </div>
+                      )}
                     </div>
                     {vacationForDay && (
                       <div className="text-[9px] font-semibold text-vacation-foreground px-1.5 py-0.5 rounded bg-vacation-badge leading-tight">

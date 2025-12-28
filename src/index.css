@@ -50,6 +50,8 @@ All colors MUST be HSL.
     --grid-border: 220 15% 25%;
     --cell-hover: 220 15% 25%;
     --sunday-accent: 210 100% 60% / 0.1;
+    --today-accent: 142 70% 45%;
+    --today-ring: 142 70% 45% / 0.5;
     
     /* Vacation colors */
     --vacation-overlay: 270 50% 15%;

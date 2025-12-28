@@ -9,13 +9,14 @@ import { PlannerFilters } from "@/components/planner/PlannerFilters";
 import { InfoDialog } from "@/components/planner/InfoDialog";
 import { VacationManager } from "@/components/planner/VacationManager";
 import { TaskView } from "@/components/planner/TaskView";
+import { TaskListView } from "@/components/planner/TaskListView";
 import { LoginDialog } from "@/components/auth/LoginDialog";
 import { WebSocketSettings, getStoredWsUrl } from "@/components/settings/WebSocketSettings";
 import { Category, ContentItem, WeekDay, SeriesConfig, VacationPeriod } from "@/types/planner";
 import { User } from "@/types/auth";
 import { InitialDataPayload } from "@/types/sync";
 import { Button } from "@/components/ui/button";
-import { Info, Calendar, ListTodo, LogOut, Wifi, WifiOff, Loader2 } from "lucide-react";
+import { Info, Calendar, ListTodo, List, LogOut, Wifi, WifiOff, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import {
@@ -68,7 +69,7 @@ const Index = () => {
   const [editingContent, setEditingContent] = useState<ContentItem | undefined>();
   const [preselectedCategory, setPreselectedCategory] = useState<string | undefined>();
   const [preselectedDate, setPreselectedDate] = useState<Date | undefined>();
-  const [viewMode, setViewMode] = useState<"planner" | "task">("planner");
+  const [viewMode, setViewMode] = useState<"planner" | "task" | "tasklist">("planner");
   const [cellOpacity, setCellOpacity] = useState({ empty: 8, filled: 35 });
   const [endlessMode, setEndlessMode] = useState(false);
   const [monthsToShow, setMonthsToShow] = useState(3);
@@ -481,6 +482,12 @@ const Index = () => {
     toast.success("Categoria eliminata");
   };
 
+  // Riordinamento categorie
+  const handleReorderCategories = (newCategories: Category[]) => {
+    setCategories(newCategories);
+    // Sincronizza con WebSocket se necessario
+  };
+
   // Creazione serie
   const handleCreateSeries = (config: SeriesConfig) => {
     const newContents: ContentItem[] = [];
@@ -710,6 +717,7 @@ const Index = () => {
               onAddCategory={handleAddCategory}
               onUpdateCategory={handleUpdateCategory}
               onDeleteCategory={handleDeleteCategory}
+              onReorderCategories={handleReorderCategories}
             />
             <SeriesCreator
               categories={categories}
@@ -771,7 +779,7 @@ const Index = () => {
           </div>
         </div>
 
-      <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "planner" | "task")} className="w-full">
+      <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "planner" | "task" | "tasklist")} className="w-full">
         <TabsList className="w-full justify-start rounded-none border-b h-auto p-0 bg-transparent">
           <TabsTrigger value="planner" className="gap-2 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
             <Calendar className="h-4 w-4" />
@@ -779,7 +787,11 @@ const Index = () => {
           </TabsTrigger>
           <TabsTrigger value="task" className="gap-2 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
             <ListTodo className="h-4 w-4" />
-            Task
+            Oggi
+          </TabsTrigger>
+          <TabsTrigger value="tasklist" className="gap-2 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
+            <List className="h-4 w-4" />
+            Task List
           </TabsTrigger>
         </TabsList>
 
@@ -869,6 +881,16 @@ const Index = () => {
             categories={categories}
             onTogglePublished={handleTogglePublished}
             onScrollToContent={handleScrollToContent}
+          />
+        </TabsContent>
+
+        <TabsContent value="tasklist" className="m-0">
+          <TaskListView
+            contents={contents}
+            categories={categories}
+            onTogglePublished={handleTogglePublished}
+            onScrollToContent={handleScrollToContent}
+            onEditContent={(content) => handleEditContent(content)}
           />
         </TabsContent>
       </Tabs>
