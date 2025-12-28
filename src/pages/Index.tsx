@@ -101,6 +101,11 @@ const Index = () => {
   const [contents, setContents] = useState<ContentItem[]>([]);
   const [vacations, setVacations] = useState<VacationPeriod[]>([]);
 
+  // Templates, Series, Shorts Presets
+  const [templates, setTemplates] = useState<ContentTemplate[]>([]);
+  const [seriesList, setSeriesList] = useState<Series[]>([]);
+  const [shortsPresets, setShortsPresets] = useState<ShortsPreset[]>([]);
+
   // WebSocket callbacks
   const handleAuthSuccess = useCallback((wsUser: User, token: string) => {
     setUser(wsUser);
@@ -488,7 +493,131 @@ const Index = () => {
   // Riordinamento categorie
   const handleReorderCategories = (newCategories: Category[]) => {
     setCategories(newCategories);
-    // Sincronizza con WebSocket se necessario
+  };
+
+  // Template handlers
+  const handleAddTemplate = (template: ContentTemplate) => {
+    setTemplates((prev) => [...prev, template]);
+    toast.success(`Template "${template.name}" creato`);
+  };
+
+  const handleUpdateTemplate = (template: ContentTemplate) => {
+    setTemplates((prev) => prev.map((t) => (t.id === template.id ? template : t)));
+    toast.success("Template aggiornato");
+  };
+
+  const handleDeleteTemplate = (id: string) => {
+    setTemplates((prev) => prev.filter((t) => t.id !== id));
+    toast.success("Template eliminato");
+  };
+
+  // Series handlers
+  const handleAddSeries = (series: Series) => {
+    setSeriesList((prev) => [...prev, series]);
+    toast.success(`Serie "${series.name}" creata`);
+  };
+
+  const handleUpdateSeries = (series: Series) => {
+    setSeriesList((prev) => prev.map((s) => (s.id === series.id ? series : s)));
+    toast.success("Serie aggiornata");
+  };
+
+  const handleDeleteSeries = (id: string) => {
+    setSeriesList((prev) => prev.filter((s) => s.id !== id));
+    toast.success("Serie eliminata");
+  };
+
+  const handleGenerateSeriesOccurrences = (seriesId: string) => {
+    const series = seriesList.find((s) => s.id === seriesId);
+    if (!series) return;
+    const template = templates.find((t) => t.id === series.templateId);
+    
+    // Generate next occurrence
+    const title = (series.options.titlePattern || "{series_name} Ep. {n}")
+      .replace("{series_name}", series.name)
+      .replace("{n}", series.currentNumber.toString());
+    
+    const newContent: ContentItem = {
+      id: `series-${Date.now()}`,
+      title,
+      categoryId: template?.defaultCategoryId || categories[0]?.id || "",
+      date: series.startDate,
+      published: false,
+      seriesId: series.id,
+      templateId: template?.id,
+      contentType: template?.contentType,
+      pipelineStageId: template?.defaultPipeline[0]?.id,
+      checklist: template?.defaultChecklist.map((item, idx) => ({
+        id: `check-${Date.now()}-${idx}`,
+        label: item.label,
+        isDone: false,
+        order: item.order,
+      })),
+    };
+    
+    setContents((prev) => [...prev, newContent]);
+    setSeriesList((prev) => 
+      prev.map((s) => s.id === seriesId ? { ...s, currentNumber: s.currentNumber + 1 } : s)
+    );
+    syncContentCreate(newContent);
+    toast.success(`Generato: ${title}`);
+  };
+
+  // Shorts Preset handlers
+  const handleAddShortsPreset = (preset: ShortsPreset) => {
+    setShortsPresets((prev) => [...prev, preset]);
+    toast.success(`Preset "${preset.name}" creato`);
+  };
+
+  const handleUpdateShortsPreset = (preset: ShortsPreset) => {
+    setShortsPresets((prev) => prev.map((p) => (p.id === preset.id ? preset : p)));
+    toast.success("Preset aggiornato");
+  };
+
+  const handleDeleteShortsPreset = (id: string) => {
+    setShortsPresets((prev) => prev.filter((p) => p.id !== id));
+    toast.success("Preset eliminato");
+  };
+
+  // Generate shorts from preset
+  const handleGenerateShorts = (parentContent: ContentItem, presetId: string) => {
+    const preset = shortsPresets.find((p) => p.id === presetId);
+    if (!preset) return;
+    
+    const template = templates.find((t) => t.id === preset.shortTemplateId);
+    const newShorts: ContentItem[] = [];
+    
+    for (let i = 0; i < preset.shortsCount; i++) {
+      const offset = preset.offsets[i] || i + 1;
+      const shortDate = addDays(parentContent.date, offset);
+      const title = preset.titleRule
+        .replace("{i}", (i + 1).toString())
+        .replace("{parent_title}", parentContent.title);
+      
+      const short: ContentItem = {
+        id: `short-${Date.now()}-${i}`,
+        title,
+        categoryId: preset.shortCategoryId || parentContent.categoryId,
+        date: shortDate,
+        published: false,
+        contentType: "short",
+        parentId: parentContent.id,
+        templateId: template?.id,
+        pipelineStageId: template?.defaultPipeline[0]?.id,
+        checklist: template?.defaultChecklist.map((item, idx) => ({
+          id: `check-${Date.now()}-${i}-${idx}`,
+          label: item.label,
+          isDone: false,
+          order: item.order,
+        })),
+      };
+      newShorts.push(short);
+    }
+    
+    setContents((prev) => [...prev, ...newShorts]);
+    newShorts.forEach((s) => syncContentCreate(s));
+    toast.success(`${newShorts.length} shorts generati`);
+    return newShorts;
   };
 
   // Creazione serie
@@ -714,13 +843,36 @@ const Index = () => {
         />
 
         <div className="flex items-center justify-between px-6 py-3 border-b border-grid-border">
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <CategoryManager
               categories={categories}
               onAddCategory={handleAddCategory}
               onUpdateCategory={handleUpdateCategory}
               onDeleteCategory={handleDeleteCategory}
               onReorderCategories={handleReorderCategories}
+            />
+            <TemplateManager
+              templates={templates}
+              categories={categories}
+              onAddTemplate={handleAddTemplate}
+              onUpdateTemplate={handleUpdateTemplate}
+              onDeleteTemplate={handleDeleteTemplate}
+            />
+            <SeriesManager
+              series={seriesList}
+              templates={templates}
+              onAddSeries={handleAddSeries}
+              onUpdateSeries={handleUpdateSeries}
+              onDeleteSeries={handleDeleteSeries}
+              onGenerateOccurrences={handleGenerateSeriesOccurrences}
+            />
+            <ShortsPresetManager
+              presets={shortsPresets}
+              templates={templates}
+              categories={categories}
+              onAddPreset={handleAddShortsPreset}
+              onUpdatePreset={handleUpdateShortsPreset}
+              onDeletePreset={handleDeleteShortsPreset}
             />
             <SeriesCreator
               categories={categories}
@@ -908,6 +1060,9 @@ const Index = () => {
         onSave={handleSaveContent}
         onDelete={handleDeleteContent}
         allContents={contents}
+        templates={templates}
+        shortsPresets={shortsPresets}
+        onGenerateShorts={handleGenerateShorts}
       />
 
       <InfoDialog
