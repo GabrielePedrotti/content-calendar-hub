@@ -139,7 +139,7 @@ export const ContentDialog = ({
   // Apply template when selected
   const handleTemplateChange = (templateId: string) => {
     setSelectedTemplateId(templateId);
-    if (!templateId) return;
+    if (!templateId || templateId === "none") return;
     
     const template = templates.find((t) => t.id === templateId);
     if (!template) return;
@@ -243,7 +243,7 @@ export const ContentDialog = ({
                   <SelectValue placeholder="Seleziona un template..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Nessun template</SelectItem>
+                  <SelectItem value="none">Nessun template</SelectItem>
                   {templates.map((t) => (
                     <SelectItem key={t.id} value={t.id}>
                       {t.name} ({CONTENT_TYPE_LABELS[t.contentType]})
