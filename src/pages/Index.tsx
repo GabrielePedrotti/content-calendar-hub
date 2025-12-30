@@ -108,94 +108,12 @@ const Index = () => {
   const [seriesList, setSeriesList] = useState<Series[]>([]);
   const [shortsPresets, setShortsPresets] = useState<ShortsPreset[]>([]);
 
-  // Undo Stack
+  // Undo Stack interface (implementation after useWebSocket)
   interface UndoState {
     contents: ContentItem[];
     categories: Category[];
     vacations: VacationPeriod[];
   }
-
-  const syncUndoDiff = useCallback((from: UndoState, to: UndoState) => {
-    const contentKey = (c: ContentItem) =>
-      JSON.stringify({ ...c, date: c.date instanceof Date ? c.date.toISOString() : c.date });
-    const categoryKey = (c: Category) => JSON.stringify(c);
-    const vacationKey = (v: VacationPeriod) =>
-      JSON.stringify({
-        ...v,
-        startDate: v.startDate instanceof Date ? v.startDate.toISOString() : v.startDate,
-        endDate: v.endDate instanceof Date ? v.endDate.toISOString() : v.endDate,
-      });
-
-    // --- Contents ---
-    const fromContents = new Map(from.contents.map((c) => [c.id, c] as const));
-    const toContents = new Map(to.contents.map((c) => [c.id, c] as const));
-
-    fromContents.forEach((c, id) => {
-      if (!toContents.has(id)) syncContentDelete(id);
-    });
-    toContents.forEach((c, id) => {
-      const prev = fromContents.get(id);
-      if (!prev) syncContentCreate(c);
-      else if (contentKey(prev) !== contentKey(c)) syncContentUpdate(c);
-    });
-
-    // --- Categories ---
-    const fromCats = new Map(from.categories.map((c) => [c.id, c] as const));
-    const toCats = new Map(to.categories.map((c) => [c.id, c] as const));
-
-    fromCats.forEach((_c, id) => {
-      if (!toCats.has(id)) syncCategoryDelete(id);
-    });
-    toCats.forEach((c, id) => {
-      const prev = fromCats.get(id);
-      if (!prev) syncCategoryCreate(c);
-      else if (categoryKey(prev) !== categoryKey(c)) syncCategoryUpdate(c);
-    });
-
-    // --- Vacations (only create/delete supported) ---
-    const fromVac = new Map(from.vacations.map((v) => [v.id, v] as const));
-    const toVac = new Map(to.vacations.map((v) => [v.id, v] as const));
-
-    fromVac.forEach((_v, id) => {
-      if (!toVac.has(id)) syncVacationDelete(id);
-    });
-    toVac.forEach((v, id) => {
-      const prev = fromVac.get(id);
-      if (!prev) syncVacationCreate(v);
-      else if (vacationKey(prev) !== vacationKey(v)) {
-        // no vacation:update endpoint -> recreate
-        syncVacationDelete(id);
-        syncVacationCreate(v);
-      }
-    });
-  }, [
-    syncContentCreate,
-    syncContentUpdate,
-    syncContentDelete,
-    syncCategoryCreate,
-    syncCategoryUpdate,
-    syncCategoryDelete,
-    syncVacationCreate,
-    syncVacationDelete,
-  ]);
-
-  const { pushUndo, undo, canUndo } = useUndoStack<UndoState>({
-    getCurrentState: useCallback(
-      () => ({
-        contents,
-        categories,
-        vacations,
-      }),
-      [contents, categories, vacations]
-    ),
-    onBeforeRestore: syncUndoDiff,
-    restoreState: useCallback((state: UndoState) => {
-      setContents(state.contents);
-      setCategories(state.categories);
-      setVacations(state.vacations);
-      toast.success("Azione annullata");
-    }, []),
-  });
 
   // WebSocket callbacks
   const handleAuthSuccess = useCallback((wsUser: User, token: string) => {
@@ -277,6 +195,89 @@ const Index = () => {
     onCategoryChange: handleCategoryChange,
     onVacationChange: handleVacationChange,
     onError: handleWsError,
+  });
+
+  // Undo Stack implementation (after useWebSocket so sync functions exist)
+  const syncUndoDiff = useCallback((from: UndoState, to: UndoState) => {
+    const contentKey = (c: ContentItem) =>
+      JSON.stringify({ ...c, date: c.date instanceof Date ? c.date.toISOString() : c.date });
+    const categoryKey = (c: Category) => JSON.stringify(c);
+    const vacationKey = (v: VacationPeriod) =>
+      JSON.stringify({
+        ...v,
+        startDate: v.startDate instanceof Date ? v.startDate.toISOString() : v.startDate,
+        endDate: v.endDate instanceof Date ? v.endDate.toISOString() : v.endDate,
+      });
+
+    // --- Contents ---
+    const fromContents = new Map(from.contents.map((c) => [c.id, c] as const));
+    const toContents = new Map(to.contents.map((c) => [c.id, c] as const));
+
+    fromContents.forEach((c, id) => {
+      if (!toContents.has(id)) syncContentDelete(id);
+    });
+    toContents.forEach((c, id) => {
+      const prev = fromContents.get(id);
+      if (!prev) syncContentCreate(c);
+      else if (contentKey(prev) !== contentKey(c)) syncContentUpdate(c);
+    });
+
+    // --- Categories ---
+    const fromCats = new Map(from.categories.map((c) => [c.id, c] as const));
+    const toCats = new Map(to.categories.map((c) => [c.id, c] as const));
+
+    fromCats.forEach((_c, id) => {
+      if (!toCats.has(id)) syncCategoryDelete(id);
+    });
+    toCats.forEach((c, id) => {
+      const prev = fromCats.get(id);
+      if (!prev) syncCategoryCreate(c);
+      else if (categoryKey(prev) !== categoryKey(c)) syncCategoryUpdate(c);
+    });
+
+    // --- Vacations (only create/delete supported) ---
+    const fromVac = new Map(from.vacations.map((v) => [v.id, v] as const));
+    const toVac = new Map(to.vacations.map((v) => [v.id, v] as const));
+
+    fromVac.forEach((_v, id) => {
+      if (!toVac.has(id)) syncVacationDelete(id);
+    });
+    toVac.forEach((v, id) => {
+      const prev = fromVac.get(id);
+      if (!prev) syncVacationCreate(v);
+      else if (vacationKey(prev) !== vacationKey(v)) {
+        // no vacation:update endpoint -> recreate
+        syncVacationDelete(id);
+        syncVacationCreate(v);
+      }
+    });
+  }, [
+    syncContentCreate,
+    syncContentUpdate,
+    syncContentDelete,
+    syncCategoryCreate,
+    syncCategoryUpdate,
+    syncCategoryDelete,
+    syncVacationCreate,
+    syncVacationDelete,
+  ]);
+
+  const { pushUndo, undo, canUndo } = useUndoStack<UndoState>({
+    getCurrentState: useCallback(
+      () => ({
+        contents,
+        categories,
+        vacations,
+      }),
+      [contents, categories, vacations]
+    ),
+    onBeforeRestore: syncUndoDiff,
+    restoreState: useCallback((state: UndoState) => {
+      setContents(state.contents);
+      setCategories(state.categories);
+      setVacations(state.vacations);
+      toast.success("Azione annullata");
+    }, []),
   });
 
   // Login handler
