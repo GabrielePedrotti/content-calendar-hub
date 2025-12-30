@@ -943,7 +943,7 @@ const Index = () => {
           isConnecting={isConnecting}
           isConnected={isConnected}
           pendingEventsCount={pendingEventsCount}
-          settingsButton={<WebSocketSettings isConnected={isConnected} onUrlChange={setWsUrl} />}
+          
           onInfoClick={() => setInfoDialogOpen(true)}
           user={user}
           onLogout={handleLogout}
