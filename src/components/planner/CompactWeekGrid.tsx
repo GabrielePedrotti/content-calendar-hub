@@ -264,6 +264,7 @@ export const CompactWeekGrid = ({
           }}
           onDeleteContent={onDeleteContent}
           onTogglePublished={onTogglePublished}
+          onSaveContent={onSaveContent}
         />
       )}
     </div>
