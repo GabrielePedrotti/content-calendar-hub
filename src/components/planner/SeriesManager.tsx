@@ -164,8 +164,8 @@ export const SeriesManager = ({
 
       {/* Series List Dialog */}
       <Dialog open={listOpen} onOpenChange={setListOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[600px] h-[70vh] flex flex-col overflow-hidden">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle className="flex items-center justify-between">
               <span>Gestione Serie</span>
               <Button size="sm" onClick={handleStartAdd} className="gap-2">
@@ -175,7 +175,7 @@ export const SeriesManager = ({
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-3 max-h-[400px] overflow-y-auto">
+          <div className="space-y-3 flex-1 overflow-y-auto">
             {series.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">
                 Nessuna serie configurata. Crea una serie per generare contenuti
@@ -265,14 +265,14 @@ export const SeriesManager = ({
 
       {/* Add/Edit Series Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[500px] h-[85vh] flex flex-col overflow-hidden">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>
               {editingSeries ? "Modifica Serie" : "Nuova Serie"}
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="space-y-4 flex-1 overflow-y-auto pr-1">
             <div className="space-y-2">
               <Label>Nome Serie</Label>
               <Input

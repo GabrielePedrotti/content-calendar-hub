@@ -158,21 +158,21 @@ export const TemplateManager = ({
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col overflow-hidden">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>
               {editingTemplate ? "Modifica Template" : "Nuovo Template"}
             </DialogTitle>
           </DialogHeader>
 
-          <Tabs defaultValue="general" className="w-full">
-            <TabsList className="w-full grid grid-cols-3">
+          <Tabs defaultValue="general" className="w-full flex-1 flex flex-col overflow-hidden">
+            <TabsList className="w-full grid grid-cols-3 flex-shrink-0">
               <TabsTrigger value="general">Generale</TabsTrigger>
               <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
               <TabsTrigger value="checklist">Checklist</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="general" className="space-y-4 mt-4">
+            <TabsContent value="general" className="space-y-4 mt-4 flex-1 overflow-y-auto">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Nome Template</Label>
@@ -294,7 +294,7 @@ export const TemplateManager = ({
               </div>
             </TabsContent>
 
-            <TabsContent value="pipeline" className="space-y-4 mt-4">
+            <TabsContent value="pipeline" className="space-y-4 mt-4 flex-1 overflow-y-auto">
               <p className="text-sm text-muted-foreground">
                 Definisci gli stati della pipeline per questo template.
               </p>
@@ -308,7 +308,7 @@ export const TemplateManager = ({
               </p>
             </TabsContent>
 
-            <TabsContent value="checklist" className="space-y-4 mt-4">
+            <TabsContent value="checklist" className="space-y-4 mt-4 flex-1 overflow-y-auto">
               <p className="text-sm text-muted-foreground">
                 Definisci la checklist predefinita per questo template.
               </p>

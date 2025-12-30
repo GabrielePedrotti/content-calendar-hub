@@ -1,11 +1,30 @@
 export type ContentType = 'video' | 'short' | 'live' | 'reel' | 'post' | 'podcast';
 export type Priority = 'low' | 'medium' | 'high';
 
+export interface CategoryFeatures {
+  notes: boolean;
+  pipeline: boolean;
+  checklist: boolean;
+  priority: boolean;
+  contentType: boolean;
+  linkedContent: boolean;
+}
+
+export const DEFAULT_CATEGORY_FEATURES: CategoryFeatures = {
+  notes: true,
+  pipeline: true,
+  checklist: true,
+  priority: true,
+  contentType: true,
+  linkedContent: true,
+};
+
 export interface Category {
   id: string;
   name: string;
   color: string; // HSL format: "142 76% 45%"
   order?: number;
+  features?: CategoryFeatures;
 }
 
 export interface PipelineStage {

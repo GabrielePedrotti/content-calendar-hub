@@ -142,8 +142,8 @@ export const ShortsPresetManager = ({
 
       {/* Presets List Dialog */}
       <Dialog open={listOpen} onOpenChange={setListOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[600px] h-[70vh] flex flex-col overflow-hidden">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle className="flex items-center justify-between">
               <span>Shorts Preset</span>
               <Button size="sm" onClick={handleStartAdd} className="gap-2">
@@ -153,7 +153,7 @@ export const ShortsPresetManager = ({
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-3 max-h-[400px] overflow-y-auto">
+          <div className="space-y-3 flex-1 overflow-y-auto">
             {presets.length === 0 ? (
               <div className="text-center py-8 space-y-2">
                 <p className="text-muted-foreground">
@@ -221,14 +221,14 @@ export const ShortsPresetManager = ({
 
       {/* Add/Edit Preset Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[500px] h-[85vh] flex flex-col overflow-hidden">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>
               {editingPreset ? "Modifica Preset" : "Nuovo Shorts Preset"}
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="space-y-4 flex-1 overflow-y-auto pr-1">
             <div className="space-y-2">
               <Label>Nome Preset</Label>
               <Input
