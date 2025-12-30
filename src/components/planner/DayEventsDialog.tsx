@@ -92,8 +92,95 @@ export const DayEventsDialog = ({
         </DialogHeader>
 
         <div className="flex flex-1 overflow-hidden">
-          {/* Left panel - Event details / editor */}
-          <div className="w-[500px] flex flex-col bg-muted/20 border-r">
+          {/* Left panel - Events list (1/3) */}
+          <div className="w-1/3 flex flex-col border-r">
+            <div className="p-4 border-b bg-muted/30">
+              <Button onClick={() => onAddContent()} className="w-full gap-2">
+                <Plus className="h-4 w-4" />
+                Aggiungi evento
+              </Button>
+            </div>
+
+            <ScrollArea className="flex-1">
+              <div className="p-3 space-y-3">
+                {contents.length === 0 ? (
+                  <div className="text-center text-muted-foreground py-8">
+                    <Calendar className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                    <p className="text-sm">Nessun evento</p>
+                  </div>
+                ) : (
+                  <>
+                    {categories.map((category) => {
+                      const categoryContents = contentsByCategory[category.id] || [];
+                      if (categoryContents.length === 0) return null;
+
+                      return (
+                        <div key={category.id} className="space-y-1">
+                          <div
+                            className="flex items-center gap-2 text-xs font-semibold px-2 py-1 rounded"
+                            style={{
+                              backgroundColor: `hsl(${category.color} / 0.2)`,
+                              color: `hsl(${category.color.split(" ")[0]} ${category.color.split(" ")[1]} 70%)`,
+                            }}
+                          >
+                            <div
+                              className="w-2 h-2 rounded-full"
+                              style={{ backgroundColor: `hsl(${category.color})` }}
+                            />
+                            {category.name}
+                            <Badge variant="outline" className="ml-auto text-[10px] h-4">
+                              {categoryContents.length}
+                            </Badge>
+                          </div>
+
+                          <div className="space-y-1">
+                            {categoryContents.map((content) => (
+                              <EventItem
+                                key={content.id}
+                                content={content}
+                                category={category}
+                                isSelected={selectedContent?.id === content.id}
+                                onClick={() => setSelectedContent(content)}
+                                onTogglePublished={onTogglePublished}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {uncategorizedContents.length > 0 && (
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-xs font-semibold px-2 py-1 rounded bg-muted text-muted-foreground">
+                          <div className="w-2 h-2 rounded-full bg-muted-foreground" />
+                          Non categorizzati
+                          <Badge variant="outline" className="ml-auto text-[10px] h-4">
+                            {uncategorizedContents.length}
+                          </Badge>
+                        </div>
+
+                        <div className="space-y-1">
+                          {uncategorizedContents.map((content) => (
+                            <EventItem
+                              key={content.id}
+                              content={content}
+                              category={null}
+                              isSelected={selectedContent?.id === content.id}
+                              onClick={() => setSelectedContent(content)}
+                              onTogglePublished={onTogglePublished}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </ScrollArea>
+          </div>
+
+          {/* Right panel - Event details (2/3) */}
+          <div className="w-2/3 flex flex-col bg-muted/10">
             {selectedContent ? (
               <EventDetails
                 content={selectedContent}
@@ -117,96 +204,6 @@ export const DayEventsDialog = ({
                 </div>
               </div>
             )}
-          </div>
-
-          {/* Right panel - Events list */}
-          <div className="flex-1 flex flex-col">
-            <div className="p-4 border-b bg-muted/30">
-              <Button onClick={() => onAddContent()} className="w-full gap-2">
-                <Plus className="h-4 w-4" />
-                Aggiungi evento
-              </Button>
-            </div>
-
-            <ScrollArea className="flex-1">
-              <div className="p-4 space-y-4">
-                {contents.length === 0 ? (
-                  <div className="text-center text-muted-foreground py-8">
-                    <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Nessun evento per questa giornata</p>
-                    <p className="text-sm">Clicca "Aggiungi evento" per crearne uno</p>
-                  </div>
-                ) : (
-                  <>
-                    {/* Categorized contents */}
-                    {categories.map((category) => {
-                      const categoryContents = contentsByCategory[category.id] || [];
-                      if (categoryContents.length === 0) return null;
-
-                      return (
-                        <div key={category.id} className="space-y-2">
-                          <div
-                            className="flex items-center gap-2 text-sm font-semibold px-2 py-1 rounded"
-                            style={{
-                              backgroundColor: `hsl(${category.color} / 0.2)`,
-                              color: `hsl(${category.color.split(" ")[0]} ${category.color.split(" ")[1]} 70%)`,
-                            }}
-                          >
-                            <div
-                              className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: `hsl(${category.color})` }}
-                            />
-                            {category.name}
-                            <Badge variant="outline" className="ml-auto text-xs">
-                              {categoryContents.length}
-                            </Badge>
-                          </div>
-
-                          <div className="space-y-1 pl-2">
-                            {categoryContents.map((content) => (
-                              <EventItem
-                                key={content.id}
-                                content={content}
-                                category={category}
-                                isSelected={selectedContent?.id === content.id}
-                                onClick={() => setSelectedContent(content)}
-                                onTogglePublished={onTogglePublished}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-
-                    {/* Uncategorized contents */}
-                    {uncategorizedContents.length > 0 && (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm font-semibold px-2 py-1 rounded bg-muted text-muted-foreground">
-                          <div className="w-3 h-3 rounded-full bg-muted-foreground" />
-                          Non categorizzati
-                          <Badge variant="outline" className="ml-auto text-xs">
-                            {uncategorizedContents.length}
-                          </Badge>
-                        </div>
-
-                        <div className="space-y-1 pl-2">
-                          {uncategorizedContents.map((content) => (
-                            <EventItem
-                              key={content.id}
-                              content={content}
-                              category={null}
-                              isSelected={selectedContent?.id === content.id}
-                              onClick={() => setSelectedContent(content)}
-                              onTogglePublished={onTogglePublished}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </ScrollArea>
           </div>
         </div>
       </DialogContent>

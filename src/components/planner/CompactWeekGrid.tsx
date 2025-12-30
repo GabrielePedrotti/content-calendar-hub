@@ -258,7 +258,10 @@ export const CompactWeekGrid = ({
             setDayDialogOpen(false);
             onEditContent(undefined, categoryId, selectedDay);
           }}
-          onSaveContent={onSaveContent}
+          onEditContent={(content) => {
+            setDayDialogOpen(false);
+            onEditContent(content);
+          }}
           onDeleteContent={onDeleteContent}
           onTogglePublished={onTogglePublished}
         />
