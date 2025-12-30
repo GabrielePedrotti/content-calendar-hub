@@ -372,12 +372,12 @@ const EditPanel = ({
           {/* Content Type */}
           <div className="space-y-2">
             <Label>Tipo contenuto</Label>
-            <Select value={editContentType} onValueChange={(v) => setEditContentType(v as ContentType | "")}>
+            <Select value={editContentType || "none"} onValueChange={(v) => setEditContentType(v === "none" ? "" : v as ContentType)}>
               <SelectTrigger>
                 <SelectValue placeholder="Seleziona tipo" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Nessuno</SelectItem>
+                <SelectItem value="none">Nessuno</SelectItem>
                 {Object.entries(CONTENT_TYPE_LABELS).map(([key, label]) => (
                   <SelectItem key={key} value={key}>
                     {label}
@@ -390,12 +390,12 @@ const EditPanel = ({
           {/* Priority */}
           <div className="space-y-2">
             <Label>Priorità</Label>
-            <Select value={editPriority} onValueChange={(v) => setEditPriority(v as Priority | "")}>
+            <Select value={editPriority || "none"} onValueChange={(v) => setEditPriority(v === "none" ? "" : v as Priority)}>
               <SelectTrigger>
                 <SelectValue placeholder="Seleziona priorità" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Nessuna</SelectItem>
+                <SelectItem value="none">Nessuna</SelectItem>
                 {Object.entries(PRIORITY_CONFIG).map(([key, config]) => (
                   <SelectItem key={key} value={key}>
                     <div className="flex items-center gap-2">
