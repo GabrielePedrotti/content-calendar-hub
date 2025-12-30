@@ -89,13 +89,14 @@ const Index = () => {
   // Link highlighting
   const [highlightedContentId, setHighlightedContentId] = useState<string | null>(null);
 
-  const [categories, setCategories] = useState<Category[]>([
-    { id: "chronicles", name: "CHRONICLES", color: "142 76% 45%" },
-    { id: "gaming", name: "GAMING", color: "210 100% 50%" },
-    { id: "minecraft", name: "MINECRAFT", color: "0 70% 45%" },
-    { id: "rec", name: "REC", color: "270 60% 55%" },
-    { id: "vod", name: "VOD", color: "25 95% 53%" },
-    { id: "twitch", name: "TWITCH", color: "270 50% 70%" },
+  // Generate dynamic IDs for default categories (will be replaced by server data)
+  const [categories, setCategories] = useState<Category[]>(() => [
+    { id: `cat-${Date.now()}-1`, name: "CHRONICLES", color: "142 76% 45%" },
+    { id: `cat-${Date.now()}-2`, name: "GAMING", color: "210 100% 50%" },
+    { id: `cat-${Date.now()}-3`, name: "MINECRAFT", color: "0 70% 45%" },
+    { id: `cat-${Date.now()}-4`, name: "REC", color: "270 60% 55%" },
+    { id: `cat-${Date.now()}-5`, name: "VOD", color: "25 95% 53%" },
+    { id: `cat-${Date.now()}-6`, name: "TWITCH", color: "270 50% 70%" },
   ]);
 
   const [contents, setContents] = useState<ContentItem[]>([]);
@@ -120,43 +121,8 @@ const Index = () => {
   }, []);
 
   const handleInitialData = useCallback((data: InitialDataPayload) => {
-    // First set categories so we can map content categoryIds
-    if (data.categories && data.categories.length > 0) {
-      setCategories(data.categories);
-      
-      // Create mapping from old local IDs to server IDs based on name
-      const serverCategoryByName = new Map(
-        data.categories.map(c => [c.name.toUpperCase(), c.id])
-      );
-      
-      // Map contents with correct categoryIds
-      if (data.contents) {
-        const mappedContents = data.contents.map(content => {
-          const parsed = parseContentDate(content);
-          // Check if categoryId exists in server categories
-          const existsInServer = data.categories.some(c => c.id === parsed.categoryId);
-          if (!existsInServer) {
-            // Try to find by matching old local ID to server category name
-            const oldIdToName: Record<string, string> = {
-              'chronicles': 'CHRONICLES',
-              'gaming': 'GAMING', 
-              'minecraft': 'MINECRAFT',
-              'rec': 'REC',
-              'vod': 'VOD',
-              'twitch': 'TWITCH',
-            };
-            const categoryName = oldIdToName[parsed.categoryId];
-            if (categoryName && serverCategoryByName.has(categoryName)) {
-              parsed.categoryId = serverCategoryByName.get(categoryName)!;
-            }
-          }
-          return parsed;
-        });
-        setContents(mappedContents);
-      }
-    } else {
-      if (data.contents) setContents(data.contents.map(parseContentDate));
-    }
+    if (data.contents) setContents(data.contents.map(parseContentDate));
+    if (data.categories && data.categories.length > 0) setCategories(data.categories);
     if (data.vacations) setVacations(data.vacations.map(parseVacationDates));
     toast.success("Dati sincronizzati");
   }, []);
