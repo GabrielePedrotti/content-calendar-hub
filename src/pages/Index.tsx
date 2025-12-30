@@ -15,13 +15,15 @@ import { SeriesManager } from "@/components/planner/SeriesManager";
 import { ShortsPresetManager } from "@/components/planner/ShortsPresetManager";
 import { LoginDialog } from "@/components/auth/LoginDialog";
 import { WebSocketSettings, getStoredWsUrl } from "@/components/settings/WebSocketSettings";
-import { Category, ContentItem, WeekDay, SeriesConfig, VacationPeriod, ContentTemplate, Series, ShortsPreset } from "@/types/planner";
+import { Category, CategoryFeatures, DEFAULT_CATEGORY_FEATURES, ContentItem, WeekDay, SeriesConfig, VacationPeriod, ContentTemplate, Series, ShortsPreset } from "@/types/planner";
 import { User } from "@/types/auth";
 import { InitialDataPayload } from "@/types/sync";
 import { Button } from "@/components/ui/button";
-import { Info, Calendar, ListTodo, List, LogOut, Wifi, WifiOff, Loader2 } from "lucide-react";
+import { Info, Calendar, ListTodo, List, LogOut, Wifi, WifiOff, Loader2, Undo2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWebSocket } from "@/hooks/useWebSocket";
+import { useUndoStack } from "@/hooks/useUndoStack";
+import { toast } from "sonner";
 import {
   startOfMonth,
   endOfMonth,
@@ -41,7 +43,6 @@ import {
   getYear,
 } from "date-fns";
 import { it } from "date-fns/locale";
-import { toast } from "sonner";
 
 // Helper per parsare le date dalle stringhe JSON
 const parseContentDate = (content: any): ContentItem => ({
@@ -106,6 +107,27 @@ const Index = () => {
   const [templates, setTemplates] = useState<ContentTemplate[]>([]);
   const [seriesList, setSeriesList] = useState<Series[]>([]);
   const [shortsPresets, setShortsPresets] = useState<ShortsPreset[]>([]);
+
+  // Undo Stack
+  interface UndoState {
+    contents: ContentItem[];
+    categories: Category[];
+    vacations: VacationPeriod[];
+  }
+
+  const { pushUndo, undo, canUndo } = useUndoStack<UndoState>({
+    getCurrentState: useCallback(() => ({
+      contents,
+      categories,
+      vacations,
+    }), [contents, categories, vacations]),
+    restoreState: useCallback((state: UndoState) => {
+      setContents(state.contents);
+      setCategories(state.categories);
+      setVacations(state.vacations);
+      toast.success("Azione annullata");
+    }, []),
+  });
 
   // WebSocket callbacks
   const handleAuthSuccess = useCallback((wsUser: User, token: string) => {
@@ -394,6 +416,7 @@ const Index = () => {
   const handleSaveContent = (
     content: Omit<ContentItem, "id"> & { id?: string }
   ) => {
+    pushUndo("save_content");
     if (content.id) {
       // If updating content with a linkedContentId, create bidirectional link
       const oldContent = contents.find((c) => c.id === content.id);
@@ -458,25 +481,29 @@ const Index = () => {
   };
 
   const handleDeleteContent = (id: string) => {
+    pushUndo("delete_content");
     setContents((prev) => prev.filter((c) => c.id !== id));
     syncContentDelete(id);
     toast.success("Contenuto eliminato");
   };
 
   // Gestione categorie
-  const handleAddCategory = (name: string, color: string) => {
+  const handleAddCategory = (name: string, color: string, features?: CategoryFeatures) => {
+    pushUndo("add_category");
     const newCategory: Category = {
       id: Date.now().toString(),
       name,
       color,
+      features: features || { ...DEFAULT_CATEGORY_FEATURES },
     };
     setCategories((prev) => [...prev, newCategory]);
     syncCategoryCreate(newCategory);
     toast.success(`Categoria "${name}" aggiunta`);
   };
 
-  const handleUpdateCategory = (id: string, name: string, color: string) => {
-    const updatedCategory = { id, name, color };
+  const handleUpdateCategory = (id: string, name: string, color: string, features?: CategoryFeatures) => {
+    pushUndo("update_category");
+    const updatedCategory: Category = { id, name, color, features };
     setCategories((prev) =>
       prev.map((cat) => (cat.id === id ? updatedCategory : cat))
     );
@@ -485,6 +512,7 @@ const Index = () => {
   };
 
   const handleDeleteCategory = (id: string) => {
+    pushUndo("delete_category");
     setCategories((prev) => prev.filter((cat) => cat.id !== id));
     setContents((prev) => prev.filter((c) => c.categoryId !== id));
     syncCategoryDelete(id);
@@ -672,6 +700,7 @@ const Index = () => {
   const handleDrop = (categoryId: string, date: Date) => {
     if (!draggedContent) return;
 
+    pushUndo("drag_drop");
     if (isAltDrag) {
       // ALT + Drag = Duplica
       const duplicated: ContentItem = {
@@ -701,6 +730,7 @@ const Index = () => {
 
   // Duplicazione
   const handleDuplicate = (content: ContentItem, newDate: Date) => {
+    pushUndo("duplicate_content");
     const duplicated: ContentItem = {
       ...content,
       id: Date.now().toString(),

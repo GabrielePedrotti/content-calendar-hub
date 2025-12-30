@@ -82,8 +82,8 @@ export const DayEventsDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0">
-        <DialogHeader className="px-6 py-4 border-b">
+      <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0 overflow-hidden">
+        <DialogHeader className="px-6 py-4 border-b flex-shrink-0">
           <DialogTitle className="flex items-center gap-2 text-xl capitalize">
             <Calendar className="h-5 w-5" />
             {formatDateDisplay}
@@ -266,7 +266,7 @@ const EventItem = ({
           )}
         </div>
         {content.notes && (
-          <p className="text-xs text-muted-foreground truncate">{content.notes}</p>
+          <p className="text-xs text-muted-foreground line-clamp-2 break-words">{content.notes}</p>
         )}
       </div>
 
