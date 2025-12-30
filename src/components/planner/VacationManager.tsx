@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,9 +13,10 @@ import { Umbrella, Trash2, CalendarDays } from "lucide-react";
 import { VacationPeriod } from "@/types/planner";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format } from "date-fns";
+import { format, isBefore, startOfDay } from "date-fns";
 import { it } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 interface VacationManagerProps {
   vacations: VacationPeriod[];
@@ -33,6 +34,17 @@ export const VacationManager = ({
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [label, setLabel] = useState("");
 
+  const today = startOfDay(new Date());
+
+  // Filter out expired vacations (endDate before today)
+  const activeVacations = useMemo(() => {
+    return vacations.filter((v) => !isBefore(v.endDate, today));
+  }, [vacations, today]);
+
+  const expiredVacations = useMemo(() => {
+    return vacations.filter((v) => isBefore(v.endDate, today));
+  }, [vacations, today]);
+
   const handleAdd = () => {
     if (startDate && endDate && label) {
       onAddVacation(startDate, endDate, label);
@@ -40,6 +52,10 @@ export const VacationManager = ({
       setEndDate(undefined);
       setLabel("");
     }
+  };
+
+  const handleCleanExpired = () => {
+    expiredVacations.forEach((v) => onDeleteVacation(v.id));
   };
 
   return (
@@ -125,12 +141,20 @@ export const VacationManager = ({
           </div>
 
           <div className="space-y-2">
-            <Label>Periodi Configurati</Label>
-            {vacations.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nessun periodo configurato</p>
+            <div className="flex items-center justify-between">
+              <Label>Periodi Attivi</Label>
+              {expiredVacations.length > 0 && (
+                <Button variant="outline" size="sm" onClick={handleCleanExpired} className="text-xs h-7">
+                  <Trash2 className="h-3 w-3 mr-1" />
+                  Rimuovi scaduti ({expiredVacations.length})
+                </Button>
+              )}
+            </div>
+            {activeVacations.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nessun periodo attivo</p>
             ) : (
               <div className="space-y-2">
-                {vacations.map((vacation) => (
+                {activeVacations.map((vacation) => (
                   <div
                     key={vacation.id}
                     className="flex items-center justify-between p-3 rounded-lg border bg-muted/30"

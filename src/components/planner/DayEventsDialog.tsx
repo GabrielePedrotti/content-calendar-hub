@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { ContentItem, Category, ContentType, Priority, ChecklistItem, CONTENT_TYPE_LABELS, PRIORITY_CONFIG, DEFAULT_PIPELINE_STAGES, PipelineStage } from "@/types/planner";
+import { ContentItem, Category, ContentType, Priority, ChecklistItem, CONTENT_TYPE_LABELS, PRIORITY_CONFIG, DEFAULT_PIPELINE_STAGES, PipelineStage, VacationPeriod } from "@/types/planner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,13 +11,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { format } from "date-fns";
+import { format, isWithinInterval } from "date-fns";
 import { it } from "date-fns/locale";
-import { Plus, Trash2, Edit, Check, Link, Calendar, FileText, X, Save, Link2 } from "lucide-react";
+import { Plus, Trash2, Edit, Check, Link, Calendar, FileText, X, Save, Link2, Umbrella, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PipelineStepper } from "./PipelineStepper";
 import { ChecklistEditor } from "./ChecklistEditor";
 import { LinkedContentSelector } from "./LinkedContentSelector";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface DayEventsDialogProps {
   open: boolean;
@@ -26,11 +28,14 @@ interface DayEventsDialogProps {
   contents: ContentItem[];
   categories: Category[];
   allContents: ContentItem[];
+  vacations?: VacationPeriod[];
   onAddContent: (categoryId?: string) => void;
   onEditContent: (content: ContentItem) => void;
   onDeleteContent: (id: string) => void;
   onTogglePublished: (content: ContentItem) => void;
   onSaveContent?: (content: ContentItem) => void;
+  onUpdateVacation?: (vacation: VacationPeriod) => void;
+  onDeleteVacation?: (id: string) => void;
 }
 
 export const DayEventsDialog = ({
@@ -40,14 +45,18 @@ export const DayEventsDialog = ({
   contents,
   categories,
   allContents,
+  vacations = [],
   onAddContent,
   onEditContent,
   onDeleteContent,
   onTogglePublished,
   onSaveContent,
+  onUpdateVacation,
+  onDeleteVacation,
 }: DayEventsDialogProps) => {
   const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [editingVacation, setEditingVacation] = useState<VacationPeriod | null>(null);
   
   // Edit form state
   const [editTitle, setEditTitle] = useState("");
@@ -110,9 +119,17 @@ export const DayEventsDialog = ({
       setSelectedContent(null);
       setIsEditing(false);
       setShowLinkedSelector(false);
+      setEditingVacation(null);
     }
     onOpenChange(newOpen);
   };
+
+  // Get vacation for this date
+  const vacationForDate = useMemo(() => {
+    return vacations.find((v) =>
+      isWithinInterval(date, { start: v.startDate, end: v.endDate })
+    );
+  }, [vacations, date]);
 
   // Group contents by category
   const contentsByCategory = useMemo(() => {
@@ -153,6 +170,54 @@ export const DayEventsDialog = ({
             </Badge>
           </DialogTitle>
         </DialogHeader>
+
+        {/* Vacation Banner */}
+        {vacationForDate && (
+          <div className="px-6 py-3 bg-vacation-overlay border-b flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Umbrella className="h-4 w-4 text-vacation-foreground" />
+              <span className="font-medium text-vacation-foreground">{vacationForDate.label}</span>
+              <span className="text-xs text-vacation-foreground/70">
+                {format(vacationForDate.startDate, "d MMM", { locale: it })} – {format(vacationForDate.endDate, "d MMM", { locale: it })}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              {onUpdateVacation && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs text-vacation-foreground hover:bg-vacation-accent"
+                  onClick={() => setEditingVacation(vacationForDate)}
+                >
+                  <Edit className="h-3 w-3 mr-1" />
+                  Modifica
+                </Button>
+              )}
+              {onDeleteVacation && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs text-destructive hover:bg-destructive/10"
+                  onClick={() => onDeleteVacation(vacationForDate.id)}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Vacation Edit Panel */}
+        {editingVacation && onUpdateVacation && (
+          <VacationEditPanel
+            vacation={editingVacation}
+            onSave={(updated) => {
+              onUpdateVacation(updated);
+              setEditingVacation(null);
+            }}
+            onCancel={() => setEditingVacation(null)}
+          />
+        )}
 
         <div className="flex flex-1 overflow-hidden">
           {/* Left panel - Events list (1/3) */}
@@ -782,6 +847,96 @@ const EventDetails = ({ content, category, linkedContent, onEdit, onDelete }: Ev
           )}
         </div>
       </ScrollArea>
+    </div>
+  );
+};
+
+// Vacation Edit Panel
+interface VacationEditPanelProps {
+  vacation: VacationPeriod;
+  onSave: (vacation: VacationPeriod) => void;
+  onCancel: () => void;
+}
+
+const VacationEditPanel = ({ vacation, onSave, onCancel }: VacationEditPanelProps) => {
+  const [label, setLabel] = useState(vacation.label);
+  const [startDate, setStartDate] = useState<Date>(vacation.startDate);
+  const [endDate, setEndDate] = useState<Date>(vacation.endDate);
+
+  const handleSave = () => {
+    onSave({
+      ...vacation,
+      label,
+      startDate,
+      endDate,
+    });
+  };
+
+  return (
+    <div className="px-6 py-4 bg-muted/30 border-b space-y-4">
+      <div className="flex items-center justify-between">
+        <h4 className="font-semibold flex items-center gap-2">
+          <Umbrella className="h-4 w-4" />
+          Modifica Ferie
+        </h4>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={onCancel}>
+            <X className="h-4 w-4 mr-1" />
+            Annulla
+          </Button>
+          <Button size="sm" onClick={handleSave}>
+            <Save className="h-4 w-4 mr-1" />
+            Salva
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <Label>Etichetta</Label>
+          <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Nome ferie" />
+        </div>
+        <div className="space-y-2">
+          <Label>Data Inizio</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-full justify-start text-left font-normal">
+                <CalendarDays className="h-4 w-4 mr-2" />
+                {format(startDate, "d MMM yyyy", { locale: it })}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <CalendarComponent
+                mode="single"
+                selected={startDate}
+                onSelect={(d) => d && setStartDate(d)}
+                locale={it}
+                className="pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+        <div className="space-y-2">
+          <Label>Data Fine</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-full justify-start text-left font-normal">
+                <CalendarDays className="h-4 w-4 mr-2" />
+                {format(endDate, "d MMM yyyy", { locale: it })}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <CalendarComponent
+                mode="single"
+                selected={endDate}
+                onSelect={(d) => d && setEndDate(d)}
+                locale={it}
+                className="pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
     </div>
   );
 };
