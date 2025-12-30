@@ -23,6 +23,8 @@ interface CompactWeekGridProps {
   onLinkHover: (contentId: string | null) => void;
   onLinkClick: (content: ContentItem) => void;
   onDeleteContent: (id: string) => void;
+  onUpdateVacation?: (vacation: VacationPeriod) => void;
+  onDeleteVacation?: (id: string) => void;
   highlightedContentId?: string | null;
   cellOpacity: { empty: number; filled: number };
   endlessMode: boolean;
@@ -46,6 +48,8 @@ export const CompactWeekGrid = ({
   onLinkHover,
   onLinkClick,
   onDeleteContent,
+  onUpdateVacation,
+  onDeleteVacation,
   highlightedContentId,
   cellOpacity,
   endlessMode,
@@ -254,6 +258,7 @@ export const CompactWeekGrid = ({
           contents={getDayContents(selectedDay)}
           categories={categories}
           allContents={contents}
+          vacations={vacations}
           onAddContent={(categoryId) => {
             setDayDialogOpen(false);
             onEditContent(undefined, categoryId, selectedDay);
@@ -265,6 +270,8 @@ export const CompactWeekGrid = ({
           onDeleteContent={onDeleteContent}
           onTogglePublished={onTogglePublished}
           onSaveContent={onSaveContent}
+          onUpdateVacation={onUpdateVacation}
+          onDeleteVacation={onDeleteVacation}
         />
       )}
     </div>

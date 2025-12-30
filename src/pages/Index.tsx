@@ -24,6 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { useUndoStack } from "@/hooks/useUndoStack";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import {
   startOfMonth,
   endOfMonth,
@@ -838,6 +839,15 @@ const Index = () => {
     toast.success(`Periodo "${label}" aggiunto`);
   };
 
+  const handleUpdateVacation = (vacation: VacationPeriod) => {
+    pushUndo("update_vacation");
+    setVacations((prev) => prev.map((v) => (v.id === vacation.id ? vacation : v)));
+    // Since there's no vacation:update, we recreate it
+    syncVacationDelete(vacation.id);
+    syncVacationCreate(vacation);
+    toast.success("Periodo aggiornato");
+  };
+
   const handleDeleteVacation = (id: string) => {
     pushUndo("delete_vacation");
     setVacations((prev) => prev.filter((v) => v.id !== id));
@@ -1014,7 +1024,7 @@ const Index = () => {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="planner" className="m-0">
+        <TabsContent value="planner" className={cn("m-0", endlessMode && "flex flex-col h-[calc(100vh-140px)]")}>
           <PlannerFilters
             categories={categories}
             selectedCategory={selectedCategory}
@@ -1027,7 +1037,7 @@ const Index = () => {
 
           <main 
             ref={scrollContainerRef}
-            className={endlessMode ? "p-6 max-h-[calc(100vh-300px)] overflow-y-auto" : "p-6"}
+            className={endlessMode ? "p-6 flex-1 overflow-y-auto" : "p-6"}
           >
             {endlessMode ? (
               // Modalità Endless - con separatori di mese
@@ -1058,6 +1068,8 @@ const Index = () => {
                         onLinkHover={handleLinkHover}
                         onLinkClick={handleLinkClick}
                         onDeleteContent={handleDeleteContent}
+                        onUpdateVacation={handleUpdateVacation}
+                        onDeleteVacation={handleDeleteVacation}
                         highlightedContentId={highlightedContentId}
                         cellOpacity={cellOpacity}
                         endlessMode={endlessMode}
@@ -1088,6 +1100,8 @@ const Index = () => {
                   onLinkHover={handleLinkHover}
                   onLinkClick={handleLinkClick}
                   onDeleteContent={handleDeleteContent}
+                  onUpdateVacation={handleUpdateVacation}
+                  onDeleteVacation={handleDeleteVacation}
                   highlightedContentId={highlightedContentId}
                   cellOpacity={cellOpacity}
                   endlessMode={false}
