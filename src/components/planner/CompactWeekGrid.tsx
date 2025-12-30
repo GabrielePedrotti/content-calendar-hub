@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { WeekDay, Category, ContentItem, VacationPeriod } from "@/types/planner";
 import { CompactCell } from "./CompactCell";
+import { DayEventsDialog } from "./DayEventsDialog";
 import { format, isWithinInterval, isSameDay, isToday } from "date-fns";
 import { it } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -19,6 +21,7 @@ interface CompactWeekGridProps {
   onQuickEdit: (content: ContentItem | undefined, categoryId: string, date: Date, newTitle: string) => void;
   onLinkHover: (contentId: string | null) => void;
   onLinkClick: (content: ContentItem) => void;
+  onDeleteContent: (id: string) => void;
   highlightedContentId?: string | null;
   cellOpacity: { empty: number; filled: number };
   endlessMode: boolean;
@@ -40,15 +43,28 @@ export const CompactWeekGrid = ({
   onQuickEdit,
   onLinkHover,
   onLinkClick,
+  onDeleteContent,
   highlightedContentId,
   cellOpacity,
   endlessMode,
   monthLabelDate,
 }: CompactWeekGridProps) => {
+  const [dayDialogOpen, setDayDialogOpen] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+
+  const handleDayClick = (date: Date) => {
+    setSelectedDay(date);
+    setDayDialogOpen(true);
+  };
+
   const getVacationForDate = (date: Date) => {
     return vacations.find((v) =>
       isWithinInterval(date, { start: v.startDate, end: v.endDate })
     );
+  };
+
+  const getDayContents = (date: Date) => {
+    return contents.filter((c) => isSameDay(c.date, date));
   };
 
   // Determina il mese di riferimento per le celle (in modalità endless)
@@ -125,11 +141,12 @@ export const CompactWeekGrid = ({
             return (
               <div
                 key={day.date.toISOString()}
+                onClick={() => isInReferenceMonth && handleDayClick(day.date)}
                 className={cn(
-                  "p-1.5 text-center border-r border-grid-border last:border-r-0 border-b h-[60px] flex flex-col items-center justify-center relative gap-0.5",
+                  "p-1.5 text-center border-r border-grid-border last:border-r-0 border-b h-[60px] flex flex-col items-center justify-center relative gap-0.5 cursor-pointer transition-colors hover:bg-accent/50",
                   day.isSunday && "bg-sunday-accent",
                   vacationForDay && "bg-vacation-accent border-vacation-accent",
-                  !isInReferenceMonth && "opacity-40",
+                  !isInReferenceMonth && "opacity-40 cursor-default hover:bg-transparent",
                   isTodayDate && "bg-[hsl(var(--today-accent)/0.15)] ring-2 ring-[hsl(var(--today-ring))] ring-inset"
                 )}
               >
@@ -225,6 +242,28 @@ export const CompactWeekGrid = ({
           </div>
         </div>
       </div>
+
+      {/* Day Events Dialog */}
+      {selectedDay && (
+        <DayEventsDialog
+          open={dayDialogOpen}
+          onOpenChange={setDayDialogOpen}
+          date={selectedDay}
+          contents={getDayContents(selectedDay)}
+          categories={categories}
+          allContents={contents}
+          onAddContent={(categoryId) => {
+            setDayDialogOpen(false);
+            onEditContent(undefined, categoryId, selectedDay);
+          }}
+          onEditContent={(content) => {
+            setDayDialogOpen(false);
+            onEditContent(content, content.categoryId, content.date);
+          }}
+          onDeleteContent={onDeleteContent}
+          onTogglePublished={onTogglePublished}
+        />
+      )}
     </div>
   );
 };

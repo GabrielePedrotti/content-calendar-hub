@@ -993,6 +993,7 @@ const Index = () => {
                         onQuickEdit={handleQuickEdit}
                         onLinkHover={handleLinkHover}
                         onLinkClick={handleLinkClick}
+                        onDeleteContent={handleDeleteContent}
                         highlightedContentId={highlightedContentId}
                         cellOpacity={cellOpacity}
                         endlessMode={endlessMode}
@@ -1021,6 +1022,7 @@ const Index = () => {
                   onQuickEdit={handleQuickEdit}
                   onLinkHover={handleLinkHover}
                   onLinkClick={handleLinkClick}
+                  onDeleteContent={handleDeleteContent}
                   highlightedContentId={highlightedContentId}
                   cellOpacity={cellOpacity}
                   endlessMode={false}
