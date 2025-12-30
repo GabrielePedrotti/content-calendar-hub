@@ -115,12 +115,80 @@ const Index = () => {
     vacations: VacationPeriod[];
   }
 
+  const syncUndoDiff = useCallback((from: UndoState, to: UndoState) => {
+    const contentKey = (c: ContentItem) =>
+      JSON.stringify({ ...c, date: c.date instanceof Date ? c.date.toISOString() : c.date });
+    const categoryKey = (c: Category) => JSON.stringify(c);
+    const vacationKey = (v: VacationPeriod) =>
+      JSON.stringify({
+        ...v,
+        startDate: v.startDate instanceof Date ? v.startDate.toISOString() : v.startDate,
+        endDate: v.endDate instanceof Date ? v.endDate.toISOString() : v.endDate,
+      });
+
+    // --- Contents ---
+    const fromContents = new Map(from.contents.map((c) => [c.id, c] as const));
+    const toContents = new Map(to.contents.map((c) => [c.id, c] as const));
+
+    fromContents.forEach((c, id) => {
+      if (!toContents.has(id)) syncContentDelete(id);
+    });
+    toContents.forEach((c, id) => {
+      const prev = fromContents.get(id);
+      if (!prev) syncContentCreate(c);
+      else if (contentKey(prev) !== contentKey(c)) syncContentUpdate(c);
+    });
+
+    // --- Categories ---
+    const fromCats = new Map(from.categories.map((c) => [c.id, c] as const));
+    const toCats = new Map(to.categories.map((c) => [c.id, c] as const));
+
+    fromCats.forEach((_c, id) => {
+      if (!toCats.has(id)) syncCategoryDelete(id);
+    });
+    toCats.forEach((c, id) => {
+      const prev = fromCats.get(id);
+      if (!prev) syncCategoryCreate(c);
+      else if (categoryKey(prev) !== categoryKey(c)) syncCategoryUpdate(c);
+    });
+
+    // --- Vacations (only create/delete supported) ---
+    const fromVac = new Map(from.vacations.map((v) => [v.id, v] as const));
+    const toVac = new Map(to.vacations.map((v) => [v.id, v] as const));
+
+    fromVac.forEach((_v, id) => {
+      if (!toVac.has(id)) syncVacationDelete(id);
+    });
+    toVac.forEach((v, id) => {
+      const prev = fromVac.get(id);
+      if (!prev) syncVacationCreate(v);
+      else if (vacationKey(prev) !== vacationKey(v)) {
+        // no vacation:update endpoint -> recreate
+        syncVacationDelete(id);
+        syncVacationCreate(v);
+      }
+    });
+  }, [
+    syncContentCreate,
+    syncContentUpdate,
+    syncContentDelete,
+    syncCategoryCreate,
+    syncCategoryUpdate,
+    syncCategoryDelete,
+    syncVacationCreate,
+    syncVacationDelete,
+  ]);
+
   const { pushUndo, undo, canUndo } = useUndoStack<UndoState>({
-    getCurrentState: useCallback(() => ({
-      contents,
-      categories,
-      vacations,
-    }), [contents, categories, vacations]),
+    getCurrentState: useCallback(
+      () => ({
+        contents,
+        categories,
+        vacations,
+      }),
+      [contents, categories, vacations]
+    ),
+    onBeforeRestore: syncUndoDiff,
     restoreState: useCallback((state: UndoState) => {
       setContents(state.contents);
       setCategories(state.categories);
@@ -521,6 +589,7 @@ const Index = () => {
 
   // Riordinamento categorie
   const handleReorderCategories = (newCategories: Category[]) => {
+    pushUndo("reorder_categories");
     setCategories(newCategories);
   };
 
@@ -743,18 +812,16 @@ const Index = () => {
 
   // Toggle pubblicato
   const handleTogglePublished = (content: ContentItem) => {
+    pushUndo("toggle_published");
     const updatedContent: ContentItem = { ...content, published: !content.published };
-    setContents((prev) =>
-      prev.map((c) =>
-        c.id === content.id ? updatedContent : c
-      )
-    );
+    setContents((prev) => prev.map((c) => (c.id === content.id ? updatedContent : c)));
     syncContentUpdate(updatedContent);
     toast.success(content.published ? "Segnato come non pubblicato" : "Segnato come pubblicato");
   };
 
   // Vacations management
   const handleAddVacation = (startDate: Date, endDate: Date, label: string) => {
+    pushUndo("add_vacation");
     const newVacation: VacationPeriod = {
       id: Date.now().toString(),
       startDate,
@@ -767,6 +834,7 @@ const Index = () => {
   };
 
   const handleDeleteVacation = (id: string) => {
+    pushUndo("delete_vacation");
     setVacations((prev) => prev.filter((v) => v.id !== id));
     syncVacationDelete(id);
     toast.success("Periodo eliminato");
@@ -819,6 +887,8 @@ const Index = () => {
     date: Date,
     newTitle: string
   ) => {
+    pushUndo("quick_edit");
+
     // If title is empty, delete the content
     if (!newTitle.trim()) {
       if (content) {
@@ -832,9 +902,7 @@ const Index = () => {
     if (content) {
       // Update existing content
       const updatedContent: ContentItem = { ...content, title: newTitle };
-      setContents((prev) =>
-        prev.map((c) => (c.id === content.id ? updatedContent : c))
-      );
+      setContents((prev) => prev.map((c) => (c.id === content.id ? updatedContent : c)));
       syncContentUpdate(updatedContent);
       toast.success("Contenuto aggiornato");
     } else {

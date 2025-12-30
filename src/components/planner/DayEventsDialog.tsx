@@ -94,8 +94,35 @@ export const DayEventsDialog = ({
         </DialogHeader>
 
         <div className="flex flex-1 overflow-hidden">
-          {/* Left panel - Events list */}
-          <div className="flex-1 flex flex-col border-r">
+          {/* Left panel - Event details / editor */}
+          <div className="w-[380px] flex flex-col bg-muted/20 border-r">
+            {selectedContent ? (
+              <EventDetails
+                content={selectedContent}
+                category={getCategoryInfo(selectedContent.categoryId)}
+                linkedContent={getLinkedContent(selectedContent.linkedContentId)}
+                onEdit={() => {
+                  onEditContent(selectedContent);
+                  handleOpenChange(false);
+                }}
+                onDelete={() => {
+                  onDeleteContent(selectedContent.id);
+                  setSelectedContent(null);
+                }}
+              />
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                <div className="text-center">
+                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Seleziona un evento</p>
+                  <p className="text-sm">per vedere i dettagli</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Right panel - Events list */}
+          <div className="flex-1 flex flex-col">
             <div className="p-4 border-b bg-muted/30">
               <Button onClick={() => onAddContent()} className="w-full gap-2">
                 <Plus className="h-4 w-4" />
@@ -183,33 +210,6 @@ export const DayEventsDialog = ({
               </div>
             </ScrollArea>
           </div>
-
-          {/* Right panel - Event details */}
-          <div className="w-[380px] flex flex-col bg-muted/20">
-            {selectedContent ? (
-              <EventDetails
-                content={selectedContent}
-                category={getCategoryInfo(selectedContent.categoryId)}
-                linkedContent={getLinkedContent(selectedContent.linkedContentId)}
-                onEdit={() => {
-                  onEditContent(selectedContent);
-                  handleOpenChange(false);
-                }}
-                onDelete={() => {
-                  onDeleteContent(selectedContent.id);
-                  setSelectedContent(null);
-                }}
-              />
-            ) : (
-              <div className="flex-1 flex items-center justify-center text-muted-foreground">
-                <div className="text-center">
-                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Seleziona un evento</p>
-                  <p className="text-sm">per vedere i dettagli</p>
-                </div>
-              </div>
-            )}
-          </div>
         </div>
       </DialogContent>
     </Dialog>
@@ -237,7 +237,7 @@ const EventItem = ({
   return (
     <div
       className={cn(
-        "flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors border",
+        "flex items-start gap-2 p-2 rounded-lg cursor-pointer transition-colors border",
         isSelected
           ? "bg-primary/10 border-primary/30"
           : "bg-background hover:bg-muted/50 border-transparent"
@@ -266,7 +266,7 @@ const EventItem = ({
           )}
         </div>
         {content.notes && (
-          <p className="text-xs text-muted-foreground line-clamp-2 break-words">{content.notes}</p>
+          <p className="text-xs text-muted-foreground whitespace-normal break-words max-w-full">{content.notes}</p>
         )}
       </div>
 

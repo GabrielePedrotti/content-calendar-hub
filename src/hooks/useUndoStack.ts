@@ -10,12 +10,18 @@ interface UseUndoStackOptions<T> {
   maxSize?: number;
   getCurrentState: () => T;
   restoreState: (state: T) => void;
+  /**
+   * Called right before restoreState() on undo.
+   * Useful to sync the inverse changes to the server.
+   */
+  onBeforeRestore?: (currentState: T, previousState: T) => void;
 }
 
 export function useUndoStack<T>({
   maxSize = 50,
   getCurrentState,
   restoreState,
+  onBeforeRestore,
 }: UseUndoStackOptions<T>) {
   const [stack, setStack] = useState<UndoableAction<T>[]>([]);
   const isRestoringRef = useRef(false);
@@ -46,18 +52,24 @@ export function useUndoStack<T>({
   const undo = useCallback(() => {
     if (stack.length === 0) return false;
 
-    isRestoringRef.current = true;
     const lastAction = stack[stack.length - 1];
+    const currentState = getCurrentState();
+
+    isRestoringRef.current = true;
+
+    // Allow caller to sync inverse changes before we restore local state
+    onBeforeRestore?.(currentState, lastAction.previousState);
+
     restoreState(lastAction.previousState);
     setStack((prev) => prev.slice(0, -1));
-    
+
     // Reset flag after state is restored
     setTimeout(() => {
       isRestoringRef.current = false;
     }, 100);
-    
+
     return true;
-  }, [stack, restoreState]);
+  }, [stack, restoreState, getCurrentState, onBeforeRestore]);
 
   // Listen for Ctrl+Z
   useEffect(() => {
