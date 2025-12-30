@@ -1084,6 +1084,7 @@ const Index = () => {
                         contents={contents}
                         vacations={vacations}
                         onEditContent={handleEditContent}
+                        onSaveContent={handleSaveContent}
                         onDragStart={handleDragStart}
                         onDragOver={handleDragOver}
                         onDrop={handleDrop}
@@ -1113,6 +1114,7 @@ const Index = () => {
                   contents={contents}
                   vacations={vacations}
                   onEditContent={handleEditContent}
+                  onSaveContent={handleSaveContent}
                   onDragStart={handleDragStart}
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}

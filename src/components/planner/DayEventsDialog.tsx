@@ -1,16 +1,20 @@
-import { useState, useMemo } from "react";
-import { ContentItem, Category } from "@/types/planner";
+import { useState, useMemo, useEffect } from "react";
+import { ContentItem, Category, ContentType, Priority, ChecklistItem, CONTENT_TYPE_LABELS, PRIORITY_CONFIG, DEFAULT_PIPELINE_STAGES, ContentTemplate, ShortsPreset, PipelineStage } from "@/types/planner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
-import { Plus, Trash2, Edit, Check, Link, Calendar, FileText } from "lucide-react";
+import { Plus, Trash2, Edit, Check, Link, Calendar, FileText, X, Save, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { CONTENT_TYPE_LABELS, PRIORITY_CONFIG } from "@/types/planner";
+import { ChecklistEditor } from "./ChecklistEditor";
+import { PipelineStepper } from "./PipelineStepper";
 
 interface DayEventsDialogProps {
   open: boolean;
@@ -19,8 +23,10 @@ interface DayEventsDialogProps {
   contents: ContentItem[];
   categories: Category[];
   allContents: ContentItem[];
+  templates?: ContentTemplate[];
+  shortsPresets?: ShortsPreset[];
   onAddContent: (categoryId?: string) => void;
-  onEditContent: (content: ContentItem) => void;
+  onSaveContent: (content: Omit<ContentItem, "id"> & { id?: string }) => void;
   onDeleteContent: (id: string) => void;
   onTogglePublished: (content: ContentItem) => void;
 }
@@ -32,17 +38,86 @@ export const DayEventsDialog = ({
   contents,
   categories,
   allContents,
+  templates = [],
+  shortsPresets = [],
   onAddContent,
-  onEditContent,
+  onSaveContent,
   onDeleteContent,
   onTogglePublished,
 }: DayEventsDialogProps) => {
   const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  
+  // Edit form state
+  const [editTitle, setEditTitle] = useState("");
+  const [editCategoryId, setEditCategoryId] = useState("");
+  const [editDate, setEditDate] = useState("");
+  const [editPublished, setEditPublished] = useState(false);
+  const [editNotes, setEditNotes] = useState("");
+  const [editContentType, setEditContentType] = useState<ContentType>("video");
+  const [editPriority, setEditPriority] = useState<Priority>("medium");
+  const [editPipelineStageId, setEditPipelineStageId] = useState("");
+  const [editChecklist, setEditChecklist] = useState<ChecklistItem[]>([]);
+
+  // Populate form when entering edit mode
+  const startEditing = (content: ContentItem) => {
+    setEditTitle(content.title);
+    setEditCategoryId(content.categoryId);
+    setEditDate(format(content.date, "yyyy-MM-dd"));
+    setEditPublished(content.published);
+    setEditNotes(content.notes || "");
+    setEditContentType(content.contentType || "video");
+    setEditPriority(content.priority || "medium");
+    setEditPipelineStageId(content.pipelineStageId || "");
+    setEditChecklist(content.checklist || []);
+    setIsEditing(true);
+  };
+
+  const cancelEditing = () => {
+    setIsEditing(false);
+  };
+
+  const handleSaveEdit = () => {
+    if (!selectedContent || !editTitle || !editCategoryId || !editDate) return;
+    
+    onSaveContent({
+      id: selectedContent.id,
+      title: editTitle,
+      categoryId: editCategoryId,
+      date: new Date(editDate),
+      published: editPublished,
+      notes: editNotes || undefined,
+      contentType: editContentType,
+      priority: editPriority,
+      pipelineStageId: editPipelineStageId || undefined,
+      checklist: editChecklist.length > 0 ? editChecklist : undefined,
+      linkedContentId: selectedContent.linkedContentId,
+      parentId: selectedContent.parentId,
+      seriesId: selectedContent.seriesId,
+      templateId: selectedContent.templateId,
+    });
+    
+    setIsEditing(false);
+    // Update selectedContent with new values
+    setSelectedContent({
+      ...selectedContent,
+      title: editTitle,
+      categoryId: editCategoryId,
+      date: new Date(editDate),
+      published: editPublished,
+      notes: editNotes || undefined,
+      contentType: editContentType,
+      priority: editPriority,
+      pipelineStageId: editPipelineStageId || undefined,
+      checklist: editChecklist.length > 0 ? editChecklist : undefined,
+    });
+  };
 
   // Reset selection when dialog closes
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
       setSelectedContent(null);
+      setIsEditing(false);
     }
     onOpenChange(newOpen);
   };
@@ -50,19 +125,16 @@ export const DayEventsDialog = ({
   // Group contents by category
   const contentsByCategory = useMemo(() => {
     const grouped: Record<string, ContentItem[]> = {};
-    
-    // Group categorized contents
     contents.forEach((content) => {
       if (!grouped[content.categoryId]) {
         grouped[content.categoryId] = [];
       }
       grouped[content.categoryId].push(content);
     });
-    
     return grouped;
   }, [contents]);
 
-  // Find uncategorized contents (contents with invalid categoryId)
+  // Find uncategorized contents
   const uncategorizedContents = useMemo(() => {
     return contents.filter(
       (content) => !categories.some((cat) => cat.id === content.categoryId)
@@ -80,9 +152,11 @@ export const DayEventsDialog = ({
 
   const formatDateDisplay = format(date, "EEEE d MMMM yyyy", { locale: it });
 
+  const pipelineStages = DEFAULT_PIPELINE_STAGES;
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0 overflow-hidden">
+      <DialogContent className="max-w-5xl h-[85vh] flex flex-col p-0 overflow-hidden">
         <DialogHeader className="px-6 py-4 border-b flex-shrink-0">
           <DialogTitle className="flex items-center gap-2 text-xl capitalize">
             <Calendar className="h-5 w-5" />
@@ -94,22 +168,46 @@ export const DayEventsDialog = ({
         </DialogHeader>
 
         <div className="flex flex-1 overflow-hidden">
-          {/* Left panel - Event details / editor */}
-          <div className="w-[380px] flex flex-col bg-muted/20 border-r">
+          {/* Left panel - Event details or Editor */}
+          <div className="w-[420px] flex flex-col bg-muted/20 border-r">
             {selectedContent ? (
-              <EventDetails
-                content={selectedContent}
-                category={getCategoryInfo(selectedContent.categoryId)}
-                linkedContent={getLinkedContent(selectedContent.linkedContentId)}
-                onEdit={() => {
-                  onEditContent(selectedContent);
-                  handleOpenChange(false);
-                }}
-                onDelete={() => {
-                  onDeleteContent(selectedContent.id);
-                  setSelectedContent(null);
-                }}
-              />
+              isEditing ? (
+                <EditPanel
+                  title={editTitle}
+                  setTitle={setEditTitle}
+                  categoryId={editCategoryId}
+                  setCategoryId={setEditCategoryId}
+                  categories={categories}
+                  date={editDate}
+                  setDate={setEditDate}
+                  published={editPublished}
+                  setPublished={setEditPublished}
+                  notes={editNotes}
+                  setNotes={setEditNotes}
+                  contentType={editContentType}
+                  setContentType={setEditContentType}
+                  priority={editPriority}
+                  setPriority={setEditPriority}
+                  pipelineStageId={editPipelineStageId}
+                  setPipelineStageId={setEditPipelineStageId}
+                  pipelineStages={pipelineStages}
+                  checklist={editChecklist}
+                  setChecklist={setEditChecklist}
+                  onSave={handleSaveEdit}
+                  onCancel={cancelEditing}
+                />
+              ) : (
+                <EventDetails
+                  content={selectedContent}
+                  category={getCategoryInfo(selectedContent.categoryId)}
+                  linkedContent={getLinkedContent(selectedContent.linkedContentId)}
+                  onEdit={() => startEditing(selectedContent)}
+                  onDelete={() => {
+                    onDeleteContent(selectedContent.id);
+                    setSelectedContent(null);
+                  }}
+                />
+              )
             ) : (
               <div className="flex-1 flex items-center justify-center text-muted-foreground">
                 <div className="text-center">
@@ -140,7 +238,6 @@ export const DayEventsDialog = ({
                   </div>
                 ) : (
                   <>
-                    {/* Categorized contents */}
                     {categories.map((category) => {
                       const categoryContents = contentsByCategory[category.id] || [];
                       if (categoryContents.length === 0) return null;
@@ -171,7 +268,10 @@ export const DayEventsDialog = ({
                                 content={content}
                                 category={category}
                                 isSelected={selectedContent?.id === content.id}
-                                onClick={() => setSelectedContent(content)}
+                                onClick={() => {
+                                  if (isEditing) cancelEditing();
+                                  setSelectedContent(content);
+                                }}
                                 onTogglePublished={onTogglePublished}
                               />
                             ))}
@@ -180,7 +280,6 @@ export const DayEventsDialog = ({
                       );
                     })}
 
-                    {/* Uncategorized contents */}
                     {uncategorizedContents.length > 0 && (
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 text-sm font-semibold px-2 py-1 rounded bg-muted text-muted-foreground">
@@ -198,7 +297,10 @@ export const DayEventsDialog = ({
                               content={content}
                               category={null}
                               isSelected={selectedContent?.id === content.id}
-                              onClick={() => setSelectedContent(content)}
+                              onClick={() => {
+                                if (isEditing) cancelEditing();
+                                setSelectedContent(content);
+                              }}
                               onTogglePublished={onTogglePublished}
                             />
                           ))}
@@ -213,6 +315,203 @@ export const DayEventsDialog = ({
         </div>
       </DialogContent>
     </Dialog>
+  );
+};
+
+// Edit Panel Component
+interface EditPanelProps {
+  title: string;
+  setTitle: (v: string) => void;
+  categoryId: string;
+  setCategoryId: (v: string) => void;
+  categories: Category[];
+  date: string;
+  setDate: (v: string) => void;
+  published: boolean;
+  setPublished: (v: boolean) => void;
+  notes: string;
+  setNotes: (v: string) => void;
+  contentType: ContentType;
+  setContentType: (v: ContentType) => void;
+  priority: Priority;
+  setPriority: (v: Priority) => void;
+  pipelineStageId: string;
+  setPipelineStageId: (v: string) => void;
+  pipelineStages: PipelineStage[];
+  checklist: ChecklistItem[];
+  setChecklist: (v: ChecklistItem[]) => void;
+  onSave: () => void;
+  onCancel: () => void;
+}
+
+const EditPanel = ({
+  title,
+  setTitle,
+  categoryId,
+  setCategoryId,
+  categories,
+  date,
+  setDate,
+  published,
+  setPublished,
+  notes,
+  setNotes,
+  contentType,
+  setContentType,
+  priority,
+  setPriority,
+  pipelineStageId,
+  setPipelineStageId,
+  pipelineStages,
+  checklist,
+  setChecklist,
+  onSave,
+  onCancel,
+}: EditPanelProps) => {
+  return (
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="p-4 border-b flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={onCancel}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h3 className="font-semibold">Modifica evento</h3>
+        </div>
+        <Button onClick={onSave} size="sm" className="gap-1">
+          <Save className="h-4 w-4" />
+          Salva
+        </Button>
+      </div>
+
+      {/* Form */}
+      <ScrollArea className="flex-1">
+        <div className="p-4 space-y-4">
+          {/* Titolo */}
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-title">Titolo</Label>
+            <Input
+              id="edit-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Titolo evento"
+            />
+          </div>
+
+          {/* Categoria e Data */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Categoria</Label>
+              <Select value={categoryId} onValueChange={setCategoryId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: `hsl(${cat.color})` }}
+                        />
+                        {cat.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-date">Data</Label>
+              <Input
+                id="edit-date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Tipo e Priorità */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Tipo</Label>
+              <Select value={contentType} onValueChange={(v) => setContentType(v as ContentType)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(CONTENT_TYPE_LABELS).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Priorità</Label>
+              <Select value={priority} onValueChange={(v) => setPriority(v as Priority)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(PRIORITY_CONFIG).map(([key, config]) => (
+                    <SelectItem key={key} value={key}>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: `hsl(${config.color})` }}
+                        />
+                        {config.label}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Pubblicato */}
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="edit-published"
+              checked={published}
+              onCheckedChange={(checked) => setPublished(checked as boolean)}
+            />
+            <Label htmlFor="edit-published">Pubblicato</Label>
+          </div>
+
+          {/* Note */}
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-notes">Note</Label>
+            <Textarea
+              id="edit-notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Aggiungi note..."
+              rows={3}
+            />
+          </div>
+
+          {/* Pipeline */}
+          <div className="space-y-1.5">
+            <Label>Pipeline</Label>
+            <PipelineStepper
+              stages={pipelineStages}
+              currentStageId={pipelineStageId}
+              onStageClick={setPipelineStageId}
+            />
+          </div>
+
+          {/* Checklist */}
+          <div className="space-y-1.5">
+            <Label>Checklist</Label>
+            <ChecklistEditor items={checklist} onChange={setChecklist} />
+          </div>
+        </div>
+      </ScrollArea>
+    </div>
   );
 };
 
@@ -266,7 +565,7 @@ const EventItem = ({
           )}
         </div>
         {content.notes && (
-          <p className="text-xs text-muted-foreground whitespace-normal break-words max-w-full">{content.notes}</p>
+          <p className="text-xs text-muted-foreground line-clamp-2 break-words">{content.notes}</p>
         )}
       </div>
 
@@ -360,7 +659,7 @@ const EventDetails = ({
           {content.notes && (
             <div>
               <h4 className="text-sm font-medium mb-1 text-muted-foreground">Note</h4>
-              <p className="text-sm whitespace-pre-wrap">{content.notes}</p>
+              <p className="text-sm whitespace-pre-wrap break-words">{content.notes}</p>
             </div>
           )}
 

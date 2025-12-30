@@ -13,6 +13,7 @@ interface CompactWeekGridProps {
   contents: ContentItem[];
   vacations: VacationPeriod[];
   onEditContent: (content?: ContentItem, categoryId?: string, date?: Date) => void;
+  onSaveContent: (content: Omit<ContentItem, "id"> & { id?: string }) => void;
   onDragStart: (content: ContentItem, isAltDrag: boolean) => void;
   onDragOver: (categoryId: string, date: Date) => void;
   onDrop: (categoryId: string, date: Date) => void;
@@ -35,6 +36,7 @@ export const CompactWeekGrid = ({
   contents,
   vacations,
   onEditContent,
+  onSaveContent,
   onDragStart,
   onDragOver,
   onDrop,
@@ -256,10 +258,7 @@ export const CompactWeekGrid = ({
             setDayDialogOpen(false);
             onEditContent(undefined, categoryId, selectedDay);
           }}
-          onEditContent={(content) => {
-            setDayDialogOpen(false);
-            onEditContent(content, content.categoryId, content.date);
-          }}
+          onSaveContent={onSaveContent}
           onDeleteContent={onDeleteContent}
           onTogglePublished={onTogglePublished}
         />
