@@ -92,8 +92,8 @@ export const DayEventsDialog = ({
         </DialogHeader>
 
         <div className="flex flex-1 overflow-hidden">
-          {/* Right Panel - Event details / editor */}
-          <div className="w-[160px] flex flex-col bg-muted/20 border-r">
+          {/* Left panel - Event details / editor */}
+          <div className="w-[500px] flex flex-col bg-muted/20 border-r">
             {selectedContent ? (
               <EventDetails
                 content={selectedContent}
