@@ -23,7 +23,7 @@ export const PlannerFilters = ({
   endlessMode,
 }: PlannerFiltersProps) => {
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 border-b border-grid-border bg-muted/20 overflow-x-auto">
+    <div className="flex items-center gap-2 px-3 py-1.5 bg-transparent overflow-x-auto ml-auto">
       <span className="text-[10px] text-muted-foreground font-medium shrink-0">Categorie:</span>
       <div className="flex items-center gap-1 flex-wrap">
         <Button
