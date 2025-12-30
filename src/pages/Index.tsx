@@ -944,7 +944,7 @@ const Index = () => {
         error={authError}
       />
       
-      <div className="min-h-screen bg-background text-foreground">
+      <div className="h-screen bg-background text-foreground flex flex-col overflow-hidden">
         <PlannerHeader
           currentDate={currentDate}
           onPreviousMonth={handlePreviousMonth}
@@ -1008,36 +1008,41 @@ const Index = () => {
           }
         />
 
-      <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "planner" | "task" | "tasklist")} className="w-full">
-        <TabsList className="w-full justify-start rounded-none border-b h-auto p-0 bg-transparent">
-          <TabsTrigger value="planner" className="gap-2 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
-            <Calendar className="h-4 w-4" />
-            Planner
-          </TabsTrigger>
-          <TabsTrigger value="task" className="gap-2 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
-            <ListTodo className="h-4 w-4" />
-            Oggi
-          </TabsTrigger>
-          <TabsTrigger value="tasklist" className="gap-2 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
-            <List className="h-4 w-4" />
-            Task List
-          </TabsTrigger>
-        </TabsList>
+      <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "planner" | "task" | "tasklist")} className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex items-center border-b border-grid-border bg-background sticky top-0 z-10">
+          <TabsList className="justify-start rounded-none h-auto p-0 bg-transparent border-0">
+            <TabsTrigger value="planner" className="gap-2 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
+              <Calendar className="h-4 w-4" />
+              Planner
+            </TabsTrigger>
+            <TabsTrigger value="task" className="gap-2 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
+              <ListTodo className="h-4 w-4" />
+              Oggi
+            </TabsTrigger>
+            <TabsTrigger value="tasklist" className="gap-2 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
+              <List className="h-4 w-4" />
+              Task List
+            </TabsTrigger>
+          </TabsList>
+          
+          {viewMode === "planner" && (
+            <PlannerFilters
+              categories={categories}
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
+              selectedWeek={selectedWeek}
+              onWeekChange={setSelectedWeek}
+              totalWeeks={weeks.length}
+              endlessMode={endlessMode}
+            />
+          )}
+        </div>
 
-        <TabsContent value="planner" className={cn("m-0", endlessMode && "flex flex-col h-[calc(100vh-140px)]")}>
-          <PlannerFilters
-            categories={categories}
-            selectedCategory={selectedCategory}
-            onCategoryChange={setSelectedCategory}
-            selectedWeek={selectedWeek}
-            onWeekChange={setSelectedWeek}
-            totalWeeks={weeks.length}
-            endlessMode={endlessMode}
-          />
+        <TabsContent value="planner" className="m-0 flex-1 overflow-hidden">
 
           <main 
             ref={scrollContainerRef}
-            className={endlessMode ? "p-6 flex-1 overflow-y-auto" : "p-6"}
+            className="p-6 flex-1 overflow-y-auto h-full"
           >
             {endlessMode ? (
               // Modalità Endless - con separatori di mese
