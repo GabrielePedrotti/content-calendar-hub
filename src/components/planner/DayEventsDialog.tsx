@@ -1,16 +1,19 @@
 import { useState, useMemo } from "react";
-import { ContentItem, Category } from "@/types/planner";
+import { ContentItem, Category, ContentType, Priority, CONTENT_TYPE_LABELS, PRIORITY_CONFIG } from "@/types/planner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
-import { Plus, Trash2, Edit, Check, Link, Calendar, FileText } from "lucide-react";
+import { Plus, Trash2, Edit, Check, Link, Calendar, FileText, X, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { CONTENT_TYPE_LABELS, PRIORITY_CONFIG } from "@/types/planner";
 
 interface DayEventsDialogProps {
   open: boolean;
@@ -23,6 +26,7 @@ interface DayEventsDialogProps {
   onEditContent: (content: ContentItem) => void;
   onDeleteContent: (id: string) => void;
   onTogglePublished: (content: ContentItem) => void;
+  onSaveContent?: (content: ContentItem) => void;
 }
 
 export const DayEventsDialog = ({
@@ -36,13 +40,56 @@ export const DayEventsDialog = ({
   onEditContent,
   onDeleteContent,
   onTogglePublished,
+  onSaveContent,
 }: DayEventsDialogProps) => {
   const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  
+  // Edit form state
+  const [editTitle, setEditTitle] = useState("");
+  const [editCategoryId, setEditCategoryId] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [editPublished, setEditPublished] = useState(false);
+  const [editContentType, setEditContentType] = useState<ContentType | "">("");
+  const [editPriority, setEditPriority] = useState<Priority | "">("");
+
+  const startEditing = (content: ContentItem) => {
+    setEditTitle(content.title);
+    setEditCategoryId(content.categoryId);
+    setEditNotes(content.notes || "");
+    setEditPublished(content.published);
+    setEditContentType(content.contentType || "");
+    setEditPriority(content.priority || "");
+    setIsEditing(true);
+  };
+
+  const cancelEditing = () => {
+    setIsEditing(false);
+  };
+
+  const handleSaveEdit = () => {
+    if (!selectedContent || !onSaveContent) return;
+    
+    const updatedContent: ContentItem = {
+      ...selectedContent,
+      title: editTitle,
+      categoryId: editCategoryId,
+      notes: editNotes || undefined,
+      published: editPublished,
+      contentType: editContentType || undefined,
+      priority: editPriority || undefined,
+    };
+    
+    onSaveContent(updatedContent);
+    setSelectedContent(updatedContent);
+    setIsEditing(false);
+  };
 
   // Reset selection when dialog closes
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
       setSelectedContent(null);
+      setIsEditing(false);
     }
     onOpenChange(newOpen);
   };
@@ -50,19 +97,15 @@ export const DayEventsDialog = ({
   // Group contents by category
   const contentsByCategory = useMemo(() => {
     const grouped: Record<string, ContentItem[]> = {};
-
-    // Group categorized contents
     contents.forEach((content) => {
       if (!grouped[content.categoryId]) {
         grouped[content.categoryId] = [];
       }
       grouped[content.categoryId].push(content);
     });
-
     return grouped;
   }, [contents]);
 
-  // Find uncategorized contents (contents with invalid categoryId)
   const uncategorizedContents = useMemo(() => {
     return contents.filter((content) => !categories.some((cat) => cat.id === content.categoryId));
   }, [contents, categories]);
@@ -140,7 +183,10 @@ export const DayEventsDialog = ({
                                 content={content}
                                 category={category}
                                 isSelected={selectedContent?.id === content.id}
-                                onClick={() => setSelectedContent(content)}
+                                onClick={() => {
+                                  setSelectedContent(content);
+                                  setIsEditing(false);
+                                }}
                                 onTogglePublished={onTogglePublished}
                               />
                             ))}
@@ -166,7 +212,10 @@ export const DayEventsDialog = ({
                               content={content}
                               category={null}
                               isSelected={selectedContent?.id === content.id}
-                              onClick={() => setSelectedContent(content)}
+                              onClick={() => {
+                                setSelectedContent(content);
+                                setIsEditing(false);
+                              }}
                               onTogglePublished={onTogglePublished}
                             />
                           ))}
@@ -179,22 +228,40 @@ export const DayEventsDialog = ({
             </ScrollArea>
           </div>
 
-          {/* Right panel - Event details (2/3) */}
+          {/* Right panel - Event details/edit (2/3) */}
           <div className="w-2/3 flex flex-col bg-muted/10">
             {selectedContent ? (
-              <EventDetails
-                content={selectedContent}
-                category={getCategoryInfo(selectedContent.categoryId)}
-                linkedContent={getLinkedContent(selectedContent.linkedContentId)}
-                onEdit={() => {
-                  onEditContent(selectedContent);
-                  handleOpenChange(false);
-                }}
-                onDelete={() => {
-                  onDeleteContent(selectedContent.id);
-                  setSelectedContent(null);
-                }}
-              />
+              isEditing ? (
+                <EditPanel
+                  content={selectedContent}
+                  categories={categories}
+                  editTitle={editTitle}
+                  setEditTitle={setEditTitle}
+                  editCategoryId={editCategoryId}
+                  setEditCategoryId={setEditCategoryId}
+                  editNotes={editNotes}
+                  setEditNotes={setEditNotes}
+                  editPublished={editPublished}
+                  setEditPublished={setEditPublished}
+                  editContentType={editContentType}
+                  setEditContentType={setEditContentType}
+                  editPriority={editPriority}
+                  setEditPriority={setEditPriority}
+                  onSave={handleSaveEdit}
+                  onCancel={cancelEditing}
+                />
+              ) : (
+                <EventDetails
+                  content={selectedContent}
+                  category={getCategoryInfo(selectedContent.categoryId)}
+                  linkedContent={getLinkedContent(selectedContent.linkedContentId)}
+                  onEdit={() => startEditing(selectedContent)}
+                  onDelete={() => {
+                    onDeleteContent(selectedContent.id);
+                    setSelectedContent(null);
+                  }}
+                />
+              )
             ) : (
               <div className="flex-1 flex items-center justify-center text-muted-foreground">
                 <div className="text-center">
@@ -208,6 +275,166 @@ export const DayEventsDialog = ({
         </div>
       </DialogContent>
     </Dialog>
+  );
+};
+
+// Edit panel component
+interface EditPanelProps {
+  content: ContentItem;
+  categories: Category[];
+  editTitle: string;
+  setEditTitle: (v: string) => void;
+  editCategoryId: string;
+  setEditCategoryId: (v: string) => void;
+  editNotes: string;
+  setEditNotes: (v: string) => void;
+  editPublished: boolean;
+  setEditPublished: (v: boolean) => void;
+  editContentType: ContentType | "";
+  setEditContentType: (v: ContentType | "") => void;
+  editPriority: Priority | "";
+  setEditPriority: (v: Priority | "") => void;
+  onSave: () => void;
+  onCancel: () => void;
+}
+
+const EditPanel = ({
+  categories,
+  editTitle,
+  setEditTitle,
+  editCategoryId,
+  setEditCategoryId,
+  editNotes,
+  setEditNotes,
+  editPublished,
+  setEditPublished,
+  editContentType,
+  setEditContentType,
+  editPriority,
+  setEditPriority,
+  onSave,
+  onCancel,
+}: EditPanelProps) => {
+  return (
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="p-4 border-b flex items-center justify-between">
+        <h3 className="font-semibold text-lg">Modifica evento</h3>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={onCancel}>
+            <X className="h-4 w-4 mr-1" />
+            Annulla
+          </Button>
+          <Button size="sm" onClick={onSave}>
+            <Save className="h-4 w-4 mr-1" />
+            Salva
+          </Button>
+        </div>
+      </div>
+
+      {/* Form */}
+      <ScrollArea className="flex-1">
+        <div className="p-4 space-y-4">
+          {/* Title */}
+          <div className="space-y-2">
+            <Label htmlFor="edit-title">Titolo</Label>
+            <Input
+              id="edit-title"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              placeholder="Titolo evento"
+            />
+          </div>
+
+          {/* Category */}
+          <div className="space-y-2">
+            <Label>Categoria</Label>
+            <Select value={editCategoryId} onValueChange={setEditCategoryId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Seleziona categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: `hsl(${cat.color})` }}
+                      />
+                      {cat.name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Content Type */}
+          <div className="space-y-2">
+            <Label>Tipo contenuto</Label>
+            <Select value={editContentType} onValueChange={(v) => setEditContentType(v as ContentType | "")}>
+              <SelectTrigger>
+                <SelectValue placeholder="Seleziona tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Nessuno</SelectItem>
+                {Object.entries(CONTENT_TYPE_LABELS).map(([key, label]) => (
+                  <SelectItem key={key} value={key}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Priority */}
+          <div className="space-y-2">
+            <Label>Priorità</Label>
+            <Select value={editPriority} onValueChange={(v) => setEditPriority(v as Priority | "")}>
+              <SelectTrigger>
+                <SelectValue placeholder="Seleziona priorità" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Nessuna</SelectItem>
+                {Object.entries(PRIORITY_CONFIG).map(([key, config]) => (
+                  <SelectItem key={key} value={key}>
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: config.color }}
+                      />
+                      {config.label}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Published */}
+          <div className="flex items-center justify-between">
+            <Label htmlFor="edit-published">Pubblicato</Label>
+            <Switch
+              id="edit-published"
+              checked={editPublished}
+              onCheckedChange={setEditPublished}
+            />
+          </div>
+
+          {/* Notes */}
+          <div className="space-y-2">
+            <Label htmlFor="edit-notes">Note</Label>
+            <Textarea
+              id="edit-notes"
+              value={editNotes}
+              onChange={(e) => setEditNotes(e.target.value)}
+              placeholder="Aggiungi note..."
+              rows={4}
+            />
+          </div>
+        </div>
+      </ScrollArea>
+    </div>
   );
 };
 
