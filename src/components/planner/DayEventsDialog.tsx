@@ -92,6 +92,33 @@ export const DayEventsDialog = ({
         </DialogHeader>
 
         <div className="flex flex-1 overflow-hidden">
+          {/* Right Panel - Event details / editor */}
+          <div className="w-[160px] flex flex-col bg-muted/20 border-r">
+            {selectedContent ? (
+              <EventDetails
+                content={selectedContent}
+                category={getCategoryInfo(selectedContent.categoryId)}
+                linkedContent={getLinkedContent(selectedContent.linkedContentId)}
+                onEdit={() => {
+                  onEditContent(selectedContent);
+                  handleOpenChange(false);
+                }}
+                onDelete={() => {
+                  onDeleteContent(selectedContent.id);
+                  setSelectedContent(null);
+                }}
+              />
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                <div className="text-center">
+                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Seleziona un evento</p>
+                  <p className="text-sm">per vedere i dettagli</p>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Right panel - Events list */}
           <div className="flex-1 flex flex-col">
             <div className="p-4 border-b bg-muted/30">
@@ -180,32 +207,6 @@ export const DayEventsDialog = ({
                 )}
               </div>
             </ScrollArea>
-          </div>
-          {/* Left panel - Event details / editor */}
-          <div className="w-[380px] flex flex-col bg-muted/20 border-r">
-            {selectedContent ? (
-              <EventDetails
-                content={selectedContent}
-                category={getCategoryInfo(selectedContent.categoryId)}
-                linkedContent={getLinkedContent(selectedContent.linkedContentId)}
-                onEdit={() => {
-                  onEditContent(selectedContent);
-                  handleOpenChange(false);
-                }}
-                onDelete={() => {
-                  onDeleteContent(selectedContent.id);
-                  setSelectedContent(null);
-                }}
-              />
-            ) : (
-              <div className="flex-1 flex items-center justify-center text-muted-foreground">
-                <div className="text-center">
-                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Seleziona un evento</p>
-                  <p className="text-sm">per vedere i dettagli</p>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </DialogContent>
