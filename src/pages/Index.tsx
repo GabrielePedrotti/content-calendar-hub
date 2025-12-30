@@ -940,99 +940,57 @@ const Index = () => {
           onOpacityChange={setCellOpacity}
           endlessMode={endlessMode}
           onEndlessModeChange={handleEndlessModeToggle}
+          isConnecting={isConnecting}
+          isConnected={isConnected}
+          pendingEventsCount={pendingEventsCount}
+          settingsButton={<WebSocketSettings isConnected={isConnected} onUrlChange={setWsUrl} />}
+          onInfoClick={() => setInfoDialogOpen(true)}
+          user={user}
+          onLogout={handleLogout}
+          managementButtons={
+            <>
+              <CategoryManager
+                categories={categories}
+                onAddCategory={handleAddCategory}
+                onUpdateCategory={handleUpdateCategory}
+                onDeleteCategory={handleDeleteCategory}
+                onReorderCategories={handleReorderCategories}
+              />
+              <TemplateManager
+                templates={templates}
+                categories={categories}
+                onAddTemplate={handleAddTemplate}
+                onUpdateTemplate={handleUpdateTemplate}
+                onDeleteTemplate={handleDeleteTemplate}
+              />
+              <SeriesManager
+                series={seriesList}
+                templates={templates}
+                onAddSeries={handleAddSeries}
+                onUpdateSeries={handleUpdateSeries}
+                onDeleteSeries={handleDeleteSeries}
+                onGenerateOccurrences={handleGenerateSeriesOccurrences}
+              />
+              <ShortsPresetManager
+                presets={shortsPresets}
+                templates={templates}
+                categories={categories}
+                onAddPreset={handleAddShortsPreset}
+                onUpdatePreset={handleUpdateShortsPreset}
+                onDeletePreset={handleDeleteShortsPreset}
+              />
+              <SeriesCreator
+                categories={categories}
+                onCreateSeries={handleCreateSeries}
+              />
+              <VacationManager
+                vacations={vacations}
+                onAddVacation={handleAddVacation}
+                onDeleteVacation={handleDeleteVacation}
+              />
+            </>
+          }
         />
-
-        <div className="flex items-center justify-between px-6 py-3 border-b border-grid-border">
-          <div className="flex gap-2 flex-wrap">
-            <CategoryManager
-              categories={categories}
-              onAddCategory={handleAddCategory}
-              onUpdateCategory={handleUpdateCategory}
-              onDeleteCategory={handleDeleteCategory}
-              onReorderCategories={handleReorderCategories}
-            />
-            <TemplateManager
-              templates={templates}
-              categories={categories}
-              onAddTemplate={handleAddTemplate}
-              onUpdateTemplate={handleUpdateTemplate}
-              onDeleteTemplate={handleDeleteTemplate}
-            />
-            <SeriesManager
-              series={seriesList}
-              templates={templates}
-              onAddSeries={handleAddSeries}
-              onUpdateSeries={handleUpdateSeries}
-              onDeleteSeries={handleDeleteSeries}
-              onGenerateOccurrences={handleGenerateSeriesOccurrences}
-            />
-            <ShortsPresetManager
-              presets={shortsPresets}
-              templates={templates}
-              categories={categories}
-              onAddPreset={handleAddShortsPreset}
-              onUpdatePreset={handleUpdateShortsPreset}
-              onDeletePreset={handleDeleteShortsPreset}
-            />
-            <SeriesCreator
-              categories={categories}
-              onCreateSeries={handleCreateSeries}
-            />
-            <VacationManager
-              vacations={vacations}
-              onAddVacation={handleAddVacation}
-              onDeleteVacation={handleDeleteVacation}
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            {/* Connection status indicator */}
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              {isConnecting ? (
-                <>
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  <span>Connessione...</span>
-                </>
-              ) : isConnected ? (
-                <>
-                  <Wifi className="h-3 w-3 text-green-500" />
-                  <span>Connesso</span>
-                </>
-              ) : (
-                <>
-                  <WifiOff className="h-3 w-3 text-muted-foreground" />
-                  <span>Offline</span>
-                </>
-              )}
-              {pendingEventsCount > 0 && (
-                <span className="ml-1 text-amber-500">({pendingEventsCount} in coda)</span>
-              )}
-            </div>
-            <WebSocketSettings 
-              isConnected={isConnected} 
-              onUrlChange={setWsUrl} 
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setInfoDialogOpen(true)}
-              className="gap-2"
-            >
-              <Info className="h-4 w-4" />
-              Scorciatoie
-            </Button>
-            {user && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="gap-2 text-muted-foreground"
-              >
-                <LogOut className="h-4 w-4" />
-                Esci
-              </Button>
-            )}
-          </div>
-        </div>
 
       <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "planner" | "task" | "tasklist")} className="w-full">
         <TabsList className="w-full justify-start rounded-none border-b h-auto p-0 bg-transparent">

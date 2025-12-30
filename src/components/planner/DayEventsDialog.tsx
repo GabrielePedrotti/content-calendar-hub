@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { ContentItem, Category, ContentType, Priority, CONTENT_TYPE_LABELS, PRIORITY_CONFIG } from "@/types/planner";
+import { ContentItem, Category, ContentType, Priority, ChecklistItem, CONTENT_TYPE_LABELS, PRIORITY_CONFIG, DEFAULT_PIPELINE_STAGES, PipelineStage } from "@/types/planner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,10 +10,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
-import { Plus, Trash2, Edit, Check, Link, Calendar, FileText, X, Save } from "lucide-react";
+import { Plus, Trash2, Edit, Check, Link, Calendar, FileText, X, Save, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PipelineStepper } from "./PipelineStepper";
+import { ChecklistEditor } from "./ChecklistEditor";
+import { LinkedContentSelector } from "./LinkedContentSelector";
 
 interface DayEventsDialogProps {
   open: boolean;
@@ -48,23 +52,34 @@ export const DayEventsDialog = ({
   // Edit form state
   const [editTitle, setEditTitle] = useState("");
   const [editCategoryId, setEditCategoryId] = useState("");
+  const [editDate, setEditDate] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [editPublished, setEditPublished] = useState(false);
   const [editContentType, setEditContentType] = useState<ContentType | "">("");
   const [editPriority, setEditPriority] = useState<Priority | "">("");
+  const [editPipelineStageId, setEditPipelineStageId] = useState("");
+  const [editChecklist, setEditChecklist] = useState<ChecklistItem[]>([]);
+  const [editLinkedContentId, setEditLinkedContentId] = useState<string | undefined>();
+  const [showLinkedSelector, setShowLinkedSelector] = useState(false);
 
   const startEditing = (content: ContentItem) => {
     setEditTitle(content.title);
     setEditCategoryId(content.categoryId);
+    setEditDate(format(content.date, "yyyy-MM-dd"));
     setEditNotes(content.notes || "");
     setEditPublished(content.published);
     setEditContentType(content.contentType || "");
     setEditPriority(content.priority || "");
+    setEditPipelineStageId(content.pipelineStageId || "");
+    setEditChecklist(content.checklist || []);
+    setEditLinkedContentId(content.linkedContentId);
+    setShowLinkedSelector(false);
     setIsEditing(true);
   };
 
   const cancelEditing = () => {
     setIsEditing(false);
+    setShowLinkedSelector(false);
   };
 
   const handleSaveEdit = () => {
@@ -74,10 +89,14 @@ export const DayEventsDialog = ({
       ...selectedContent,
       title: editTitle,
       categoryId: editCategoryId,
+      date: new Date(editDate),
       notes: editNotes || undefined,
       published: editPublished,
       contentType: editContentType || undefined,
       priority: editPriority || undefined,
+      pipelineStageId: editPipelineStageId || undefined,
+      checklist: editChecklist.length > 0 ? editChecklist : undefined,
+      linkedContentId: editLinkedContentId,
     };
     
     onSaveContent(updatedContent);
@@ -90,6 +109,7 @@ export const DayEventsDialog = ({
     if (!newOpen) {
       setSelectedContent(null);
       setIsEditing(false);
+      setShowLinkedSelector(false);
     }
     onOpenChange(newOpen);
   };
@@ -235,10 +255,13 @@ export const DayEventsDialog = ({
                 <EditPanel
                   content={selectedContent}
                   categories={categories}
+                  allContents={allContents}
                   editTitle={editTitle}
                   setEditTitle={setEditTitle}
                   editCategoryId={editCategoryId}
                   setEditCategoryId={setEditCategoryId}
+                  editDate={editDate}
+                  setEditDate={setEditDate}
                   editNotes={editNotes}
                   setEditNotes={setEditNotes}
                   editPublished={editPublished}
@@ -247,6 +270,14 @@ export const DayEventsDialog = ({
                   setEditContentType={setEditContentType}
                   editPriority={editPriority}
                   setEditPriority={setEditPriority}
+                  editPipelineStageId={editPipelineStageId}
+                  setEditPipelineStageId={setEditPipelineStageId}
+                  editChecklist={editChecklist}
+                  setEditChecklist={setEditChecklist}
+                  editLinkedContentId={editLinkedContentId}
+                  setEditLinkedContentId={setEditLinkedContentId}
+                  showLinkedSelector={showLinkedSelector}
+                  setShowLinkedSelector={setShowLinkedSelector}
                   onSave={handleSaveEdit}
                   onCancel={cancelEditing}
                 />
@@ -282,10 +313,13 @@ export const DayEventsDialog = ({
 interface EditPanelProps {
   content: ContentItem;
   categories: Category[];
+  allContents: ContentItem[];
   editTitle: string;
   setEditTitle: (v: string) => void;
   editCategoryId: string;
   setEditCategoryId: (v: string) => void;
+  editDate: string;
+  setEditDate: (v: string) => void;
   editNotes: string;
   setEditNotes: (v: string) => void;
   editPublished: boolean;
@@ -294,16 +328,28 @@ interface EditPanelProps {
   setEditContentType: (v: ContentType | "") => void;
   editPriority: Priority | "";
   setEditPriority: (v: Priority | "") => void;
+  editPipelineStageId: string;
+  setEditPipelineStageId: (v: string) => void;
+  editChecklist: ChecklistItem[];
+  setEditChecklist: (v: ChecklistItem[]) => void;
+  editLinkedContentId: string | undefined;
+  setEditLinkedContentId: (v: string | undefined) => void;
+  showLinkedSelector: boolean;
+  setShowLinkedSelector: (v: boolean) => void;
   onSave: () => void;
   onCancel: () => void;
 }
 
 const EditPanel = ({
+  content,
   categories,
+  allContents,
   editTitle,
   setEditTitle,
   editCategoryId,
   setEditCategoryId,
+  editDate,
+  setEditDate,
   editNotes,
   setEditNotes,
   editPublished,
@@ -312,9 +358,30 @@ const EditPanel = ({
   setEditContentType,
   editPriority,
   setEditPriority,
+  editPipelineStageId,
+  setEditPipelineStageId,
+  editChecklist,
+  setEditChecklist,
+  editLinkedContentId,
+  setEditLinkedContentId,
+  showLinkedSelector,
+  setShowLinkedSelector,
   onSave,
   onCancel,
 }: EditPanelProps) => {
+  const linkedContent = editLinkedContentId 
+    ? allContents.find((c) => c.id === editLinkedContentId) 
+    : undefined;
+  
+  const linkedCategory = linkedContent
+    ? categories.find((cat) => cat.id === linkedContent.categoryId)
+    : undefined;
+
+  const completedChecklist = editChecklist.filter((c) => c.isDone).length;
+  const checklistProgress = editChecklist.length > 0 
+    ? Math.round((completedChecklist / editChecklist.length) * 100) 
+    : 0;
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -346,73 +413,84 @@ const EditPanel = ({
             />
           </div>
 
-          {/* Category */}
-          <div className="space-y-2">
-            <Label>Categoria</Label>
-            <Select value={editCategoryId} onValueChange={setEditCategoryId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Seleziona categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: `hsl(${cat.color})` }}
-                      />
-                      {cat.name}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Category & Date */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Categoria</Label>
+              <Select value={editCategoryId} onValueChange={setEditCategoryId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleziona categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: `hsl(${cat.color})` }}
+                        />
+                        {cat.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-date">Data</Label>
+              <Input
+                id="edit-date"
+                type="date"
+                value={editDate}
+                onChange={(e) => setEditDate(e.target.value)}
+              />
+            </div>
           </div>
 
-          {/* Content Type */}
-          <div className="space-y-2">
-            <Label>Tipo contenuto</Label>
-            <Select value={editContentType || "none"} onValueChange={(v) => setEditContentType(v === "none" ? "" : v as ContentType)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Seleziona tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Nessuno</SelectItem>
-                {Object.entries(CONTENT_TYPE_LABELS).map(([key, label]) => (
-                  <SelectItem key={key} value={key}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Priority */}
-          <div className="space-y-2">
-            <Label>Priorità</Label>
-            <Select value={editPriority || "none"} onValueChange={(v) => setEditPriority(v === "none" ? "" : v as Priority)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Seleziona priorità" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Nessuna</SelectItem>
-                {Object.entries(PRIORITY_CONFIG).map(([key, config]) => (
-                  <SelectItem key={key} value={key}>
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: config.color }}
-                      />
-                      {config.label}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Content Type & Priority */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Tipo contenuto</Label>
+              <Select value={editContentType || "none"} onValueChange={(v) => setEditContentType(v === "none" ? "" : v as ContentType)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleziona tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nessuno</SelectItem>
+                  {Object.entries(CONTENT_TYPE_LABELS).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Priorità</Label>
+              <Select value={editPriority || "none"} onValueChange={(v) => setEditPriority(v === "none" ? "" : v as Priority)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleziona priorità" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nessuna</SelectItem>
+                  {Object.entries(PRIORITY_CONFIG).map(([key, config]) => (
+                    <SelectItem key={key} value={key}>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: `hsl(${config.color})` }}
+                        />
+                        {config.label}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Published */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
             <Label htmlFor="edit-published">Pubblicato</Label>
             <Switch
               id="edit-published"
@@ -421,17 +499,118 @@ const EditPanel = ({
             />
           </div>
 
-          {/* Notes */}
-          <div className="space-y-2">
-            <Label htmlFor="edit-notes">Note</Label>
-            <Textarea
-              id="edit-notes"
-              value={editNotes}
-              onChange={(e) => setEditNotes(e.target.value)}
-              placeholder="Aggiungi note..."
-              rows={4}
-            />
-          </div>
+          {/* Advanced options in accordion */}
+          <Accordion type="multiple" className="w-full">
+            {/* Pipeline */}
+            <AccordionItem value="pipeline">
+              <AccordionTrigger className="text-sm">
+                <div className="flex items-center gap-2">
+                  Pipeline
+                  {editPipelineStageId && (
+                    <Badge variant="outline" className="text-xs font-normal">
+                      {DEFAULT_PIPELINE_STAGES.find((s) => s.id === editPipelineStageId)?.name || "N/A"}
+                    </Badge>
+                  )}
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <PipelineStepper
+                  stages={DEFAULT_PIPELINE_STAGES}
+                  currentStageId={editPipelineStageId}
+                  onStageClick={setEditPipelineStageId}
+                />
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* Checklist */}
+            <AccordionItem value="checklist">
+              <AccordionTrigger className="text-sm">
+                <div className="flex items-center gap-2">
+                  Checklist
+                  {editChecklist.length > 0 && (
+                    <Badge variant="outline" className="text-xs font-normal">
+                      {completedChecklist}/{editChecklist.length} ({checklistProgress}%)
+                    </Badge>
+                  )}
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <ChecklistEditor items={editChecklist} onChange={setEditChecklist} />
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* Linked Content */}
+            <AccordionItem value="linked">
+              <AccordionTrigger className="text-sm">
+                <div className="flex items-center gap-2">
+                  Contenuto Collegato
+                  {linkedContent && (
+                    <Badge variant="outline" className="text-xs font-normal">
+                      <Link2 className="h-3 w-3 mr-1" />
+                      {linkedContent.title.slice(0, 15)}...
+                    </Badge>
+                  )}
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <LinkedContentSelector
+                  open={showLinkedSelector}
+                  onOpenChange={setShowLinkedSelector}
+                  contents={allContents.filter((c) => c.id !== content.id)}
+                  categories={categories}
+                  currentContentId={content.id}
+                  onSelect={(id) => {
+                    setEditLinkedContentId(id);
+                  }}
+                />
+                {!showLinkedSelector && linkedContent ? (
+                  <div className="flex items-center gap-2 p-3 rounded-lg border bg-muted/30">
+                    <Link2 className="h-4 w-4 text-primary flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">
+                        {linkedContent.title}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {linkedCategory?.name} – {format(linkedContent.date, "d MMM yyyy", { locale: it })}
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setEditLinkedContentId(undefined)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : !showLinkedSelector ? (
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowLinkedSelector(true)}
+                    className="w-full justify-start"
+                  >
+                    <Link2 className="h-4 w-4 mr-2" />
+                    Seleziona contenuto collegato
+                  </Button>
+                ) : null}
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* Notes */}
+            <AccordionItem value="notes">
+              <AccordionTrigger className="text-sm">
+                Note
+                {editNotes && <Badge variant="outline" className="text-xs font-normal ml-2">✓</Badge>}
+              </AccordionTrigger>
+              <AccordionContent>
+                <Textarea
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  placeholder="Aggiungi note..."
+                  rows={4}
+                />
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </div>
       </ScrollArea>
     </div>
