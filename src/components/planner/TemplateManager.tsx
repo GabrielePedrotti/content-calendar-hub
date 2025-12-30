@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChecklistEditor } from "./ChecklistEditor";
-import { PipelineStepper } from "./PipelineStepper";
+import { PipelineEditor, DEFAULT_SIMPLE_STAGES } from "./PipelineEditor";
 import {
   FileText,
   Plus,
@@ -58,7 +58,7 @@ interface TemplateManagerProps {
 const createDefaultTemplate = (): Omit<ContentTemplate, "id"> => ({
   name: "",
   contentType: "video",
-  defaultPipeline: [...DEFAULT_PIPELINE_STAGES],
+  defaultPipeline: [...DEFAULT_SIMPLE_STAGES],
   defaultChecklist: DEFAULT_VIDEO_CHECKLIST.map((item) => ({
     label: item.label,
     order: item.order,
@@ -295,17 +295,12 @@ export const TemplateManager = ({
             </TabsContent>
 
             <TabsContent value="pipeline" className="space-y-4 mt-4 flex-1 overflow-y-auto">
-              <p className="text-sm text-muted-foreground">
-                Definisci gli stati della pipeline per questo template.
-              </p>
-              <PipelineStepper
+              <PipelineEditor
                 stages={formData.defaultPipeline}
-                currentStageId={formData.defaultPipeline[0]?.id}
+                onChange={(stages) =>
+                  setFormData({ ...formData, defaultPipeline: stages })
+                }
               />
-              <p className="text-xs text-muted-foreground">
-                La pipeline di default viene utilizzata per tutti i contenuti
-                creati con questo template.
-              </p>
             </TabsContent>
 
             <TabsContent value="checklist" className="space-y-4 mt-4 flex-1 overflow-y-auto">

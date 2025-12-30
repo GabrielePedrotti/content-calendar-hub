@@ -20,6 +20,8 @@ interface PlannerHeaderProps {
   onOpacityChange: (opacity: { empty: number; filled: number }) => void;
   endlessMode: boolean;
   onEndlessModeChange: (enabled: boolean) => void;
+  endlessWeeksBefore?: number;
+  onEndlessWeeksBeforeChange?: (weeks: number) => void;
   managementButtons?: ReactNode;
   isConnecting?: boolean;
   isConnected?: boolean;
@@ -39,6 +41,8 @@ export const PlannerHeader = ({
   onOpacityChange,
   endlessMode,
   onEndlessModeChange,
+  endlessWeeksBefore,
+  onEndlessWeeksBeforeChange,
   managementButtons,
   isConnecting,
   isConnected,
@@ -162,38 +166,58 @@ export const PlannerHeader = ({
             <TooltipContent>Impostazioni</TooltipContent>
           </Tooltip>
           <PopoverContent className="w-72">
-            <div className="space-y-3">
-              <h4 className="font-medium text-xs">Trasparenza Celle</h4>
-              <div className="space-y-2">
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-[10px] text-muted-foreground">Vuote</label>
-                    <span className="text-[10px] font-mono">{cellOpacity.empty}%</span>
+            <div className="space-y-4">
+              <div className="space-y-3">
+                <h4 className="font-medium text-xs">Trasparenza Celle</h4>
+                <div className="space-y-2">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[10px] text-muted-foreground">Vuote</label>
+                      <span className="text-[10px] font-mono">{cellOpacity.empty}%</span>
+                    </div>
+                    <Slider
+                      value={[cellOpacity.empty]}
+                      onValueChange={([value]) => onOpacityChange({ ...cellOpacity, empty: value })}
+                      min={0}
+                      max={100}
+                      step={1}
+                      className="h-4"
+                    />
                   </div>
-                  <Slider
-                    value={[cellOpacity.empty]}
-                    onValueChange={([value]) => onOpacityChange({ ...cellOpacity, empty: value })}
-                    min={0}
-                    max={100}
-                    step={1}
-                    className="h-4"
-                  />
-                </div>
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-[10px] text-muted-foreground">Piene</label>
-                    <span className="text-[10px] font-mono">{cellOpacity.filled}%</span>
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[10px] text-muted-foreground">Piene</label>
+                      <span className="text-[10px] font-mono">{cellOpacity.filled}%</span>
+                    </div>
+                    <Slider
+                      value={[cellOpacity.filled]}
+                      onValueChange={([value]) => onOpacityChange({ ...cellOpacity, filled: value })}
+                      min={0}
+                      max={100}
+                      step={1}
+                      className="h-4"
+                    />
                   </div>
-                  <Slider
-                    value={[cellOpacity.filled]}
-                    onValueChange={([value]) => onOpacityChange({ ...cellOpacity, filled: value })}
-                    min={0}
-                    max={100}
-                    step={1}
-                    className="h-4"
-                  />
                 </div>
               </div>
+              
+              {endlessMode && onEndlessWeeksBeforeChange !== undefined && endlessWeeksBefore !== undefined && (
+                <div className="space-y-2 border-t pt-3">
+                  <h4 className="font-medium text-xs">Settimane Passate (Endless)</h4>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[10px] text-muted-foreground">Mostra settimane prima</label>
+                    <span className="text-[10px] font-mono">{endlessWeeksBefore}</span>
+                  </div>
+                  <Slider
+                    value={[endlessWeeksBefore]}
+                    onValueChange={([value]) => onEndlessWeeksBeforeChange?.(value)}
+                    min={0}
+                    max={12}
+                    step={1}
+                    className="h-4"
+                  />
+                </div>
+              )}
             </div>
           </PopoverContent>
         </Popover>
