@@ -1039,6 +1039,7 @@ const Index = () => {
           {viewMode === "planner" && (
             <PlannerFilters
               categories={categories}
+              contents={contents}
               selectedCategory={selectedCategory}
               onCategoryChange={setSelectedCategory}
               selectedWeek={selectedWeek}
@@ -1047,6 +1048,9 @@ const Index = () => {
               endlessMode={endlessMode}
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
+              onContentClick={(content) => {
+                handleEditContent(content);
+              }}
             />
           )}
         </div>
