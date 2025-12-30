@@ -84,6 +84,7 @@ const Index = () => {
   // Filtri
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Drag & Drop
   const [draggedContent, setDraggedContent] = useState<ContentItem | null>(null);
@@ -424,6 +425,16 @@ const Index = () => {
   const filteredCategories = useMemo(() => {
     return categories.filter((cat) => selectedCategory === null || cat.id === selectedCategory);
   }, [categories, selectedCategory]);
+
+  // Filtered contents based on search query
+  const filteredContents = useMemo(() => {
+    if (!searchQuery.trim()) return contents;
+    const query = searchQuery.toLowerCase();
+    return contents.filter((c) => 
+      c.title.toLowerCase().includes(query) ||
+      c.notes?.toLowerCase().includes(query)
+    );
+  }, [contents, searchQuery]);
 
   // Scroll infinito - carica più settimane quando si scrolla in basso
   useEffect(() => {
@@ -1034,6 +1045,8 @@ const Index = () => {
               onWeekChange={setSelectedWeek}
               totalWeeks={weeks.length}
               endlessMode={endlessMode}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
             />
           )}
         </div>
@@ -1060,7 +1073,7 @@ const Index = () => {
                         weekNumber={week.weekNumber}
                         weekDays={week.days}
                         categories={filteredCategories}
-                        contents={contents}
+                        contents={filteredContents}
                         vacations={vacations}
                         onEditContent={handleEditContent}
                         onSaveContent={handleSaveContent}
@@ -1092,7 +1105,7 @@ const Index = () => {
                   weekNumber={week.weekNumber}
                   weekDays={week.days}
                   categories={filteredCategories}
-                  contents={contents}
+                  contents={filteredContents}
                   vacations={vacations}
                   onEditContent={handleEditContent}
                   onSaveContent={handleSaveContent}
