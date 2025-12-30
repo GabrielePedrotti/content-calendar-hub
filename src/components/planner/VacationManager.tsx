@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,10 +9,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Umbrella, Trash2 } from "lucide-react";
+import { Umbrella, Trash2, CalendarDays } from "lucide-react";
 import { VacationPeriod } from "@/types/planner";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 interface VacationManagerProps {
   vacations: VacationPeriod[];
@@ -26,15 +29,15 @@ export const VacationManager = ({
   onDeleteVacation,
 }: VacationManagerProps) => {
   const [open, setOpen] = useState(false);
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
   const [label, setLabel] = useState("");
 
   const handleAdd = () => {
     if (startDate && endDate && label) {
-      onAddVacation(new Date(startDate), new Date(endDate), label);
-      setStartDate("");
-      setEndDate("");
+      onAddVacation(startDate, endDate, label);
+      setStartDate(undefined);
+      setEndDate(undefined);
       setLabel("");
     }
   };
@@ -53,23 +56,59 @@ export const VacationManager = ({
         </DialogHeader>
         <div className="space-y-4">
           <div className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="startDate">Data Inizio</Label>
-              <Input
-                id="startDate"
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="endDate">Data Fine</Label>
-              <Input
-                id="endDate"
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label>Data Inizio</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !startDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarDays className="h-4 w-4 mr-2" />
+                      {startDate ? format(startDate, "d MMM yyyy", { locale: it }) : "Seleziona"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={startDate}
+                      onSelect={setStartDate}
+                      locale={it}
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="grid gap-2">
+                <Label>Data Fine</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !endDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarDays className="h-4 w-4 mr-2" />
+                      {endDate ? format(endDate, "d MMM yyyy", { locale: it }) : "Seleziona"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={endDate}
+                      onSelect={setEndDate}
+                      locale={it}
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="label">Etichetta</Label>
@@ -80,7 +119,9 @@ export const VacationManager = ({
                 placeholder="es. Vacanze Natale"
               />
             </div>
-            <Button onClick={handleAdd}>Aggiungi Periodo</Button>
+            <Button onClick={handleAdd} disabled={!startDate || !endDate || !label}>
+              Aggiungi Periodo
+            </Button>
           </div>
 
           <div className="space-y-2">

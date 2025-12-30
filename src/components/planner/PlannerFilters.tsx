@@ -1,13 +1,7 @@
 import { Category } from "@/types/planner";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface PlannerFiltersProps {
   categories: Category[];
@@ -29,50 +23,63 @@ export const PlannerFilters = ({
   endlessMode,
 }: PlannerFiltersProps) => {
   return (
-    <div className="flex flex-wrap items-end gap-4 p-4 border-b border-grid-border bg-card">
-      <div className="flex-1 min-w-[200px]">
-        <Label className="text-xs mb-1.5 block">Filtra per Categoria</Label>
-        <Select
-          value={selectedCategory || "all"}
-          onValueChange={(v) => onCategoryChange(v === "all" ? null : v)}
+    <div className="flex items-center gap-2 px-3 py-1.5 border-b border-grid-border bg-muted/20 overflow-x-auto">
+      <span className="text-[10px] text-muted-foreground font-medium shrink-0">Categorie:</span>
+      <div className="flex items-center gap-1 flex-wrap">
+        <Button
+          variant={selectedCategory === null ? "default" : "ghost"}
+          size="sm"
+          className="h-6 px-2 text-[10px]"
+          onClick={() => onCategoryChange(null)}
         >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tutte le categorie</SelectItem>
-            {categories.map((cat) => (
-              <SelectItem key={cat.id} value={cat.id}>
-                {cat.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          Tutte
+        </Button>
+        {categories.map((cat) => (
+          <Button
+            key={cat.id}
+            variant={selectedCategory === cat.id ? "default" : "ghost"}
+            size="sm"
+            className={cn(
+              "h-6 px-2 text-[10px] gap-1.5",
+              selectedCategory === cat.id && "ring-1 ring-primary"
+            )}
+            onClick={() => onCategoryChange(cat.id)}
+          >
+            <div
+              className="w-2 h-2 rounded-full shrink-0"
+              style={{ backgroundColor: `hsl(${cat.color})` }}
+            />
+            {cat.name}
+          </Button>
+        ))}
       </div>
 
-      {!endlessMode && (
-        <div className="flex gap-2">
-          <Label className="text-xs mb-1.5 block w-full">Filtra per Settimana</Label>
-          <div className="flex gap-1">
+      {!endlessMode && totalWeeks > 0 && (
+        <>
+          <div className="w-px h-4 bg-border shrink-0 mx-1" />
+          <span className="text-[10px] text-muted-foreground font-medium shrink-0">Settimane:</span>
+          <div className="flex items-center gap-0.5">
             <Button
-              variant={selectedWeek === null ? "default" : "outline"}
+              variant={selectedWeek === null ? "default" : "ghost"}
               size="sm"
+              className="h-5 w-5 p-0 text-[9px]"
               onClick={() => onWeekChange(null)}
             >
-              Tutte
+              ∞
             </Button>
             {Array.from({ length: totalWeeks }, (_, i) => i + 1).map((week) => (
               <Button
                 key={week}
-                variant={selectedWeek === week ? "default" : "outline"}
+                variant={selectedWeek === week ? "default" : "ghost"}
                 size="sm"
+                className="h-5 w-5 p-0 text-[9px]"
                 onClick={() => onWeekChange(week)}
               >
-                S{week}
+                {week}
               </Button>
             ))}
           </div>
-        </div>
+        </>
       )}
     </div>
   );

@@ -17,8 +17,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ListOrdered } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ListOrdered, CalendarDays } from "lucide-react";
 import { format } from "date-fns";
+import { it } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 interface SeriesCreatorProps {
   categories: Category[];
@@ -34,18 +38,18 @@ export const SeriesCreator = ({
   const [startNumber, setStartNumber] = useState(1);
   const [endNumber, setEndNumber] = useState(10);
   const [categoryId, setCategoryId] = useState("");
-  const [startDate, setStartDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [startDate, setStartDate] = useState<Date>(new Date());
   const [frequency, setFrequency] = useState<"daily" | "weekdays" | "weekly">("daily");
 
   const handleCreate = () => {
-    if (!baseTitle.trim() || !categoryId || !startDate) return;
+    if (!baseTitle.trim() || !categoryId) return;
 
     onCreateSeries({
       baseTitle: baseTitle.trim(),
       startNumber,
       endNumber,
       categoryId,
-      startDate: new Date(startDate),
+      startDate,
       frequency,
     });
 
@@ -54,7 +58,7 @@ export const SeriesCreator = ({
     setStartNumber(1);
     setEndNumber(10);
     setCategoryId("");
-    setStartDate(format(new Date(), "yyyy-MM-dd"));
+    setStartDate(new Date());
     setFrequency("daily");
     setOpen(false);
   };
@@ -121,13 +125,27 @@ export const SeriesCreator = ({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="start-date">Data di Partenza</Label>
-              <Input
-                id="start-date"
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
+              <Label>Data di Partenza</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn("w-full justify-start text-left font-normal")}
+                  >
+                    <CalendarDays className="h-4 w-4 mr-2" />
+                    {format(startDate, "d MMM yyyy", { locale: it })}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={(date) => date && setStartDate(date)}
+                    locale={it}
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="grid gap-2">

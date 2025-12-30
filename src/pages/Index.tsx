@@ -76,6 +76,7 @@ const Index = () => {
   const [viewMode, setViewMode] = useState<"planner" | "task" | "tasklist">("planner");
   const [cellOpacity, setCellOpacity] = useState({ empty: 8, filled: 35 });
   const [endlessMode, setEndlessMode] = useState(false);
+  const [endlessWeeksBefore, setEndlessWeeksBefore] = useState(0);
   const [monthsToShow, setMonthsToShow] = useState(3);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -333,11 +334,14 @@ const Index = () => {
 
   const weeks = useMemo(() => {
     if (endlessMode) {
-      // In modalità endless, genera settimane per più mesi
+      // In modalità endless, genera settimane per più mesi (incluse settimane passate)
       const allWeeks: { weekNumber: number; days: WeekDay[]; monthYear: string; monthLabelDate: Date }[] = [];
       let weekCounter = 1;
 
-      for (let i = 0; i < monthsToShow; i++) {
+      // Calcola data di inizio basata su endlessWeeksBefore
+      const startDate = subMonths(currentDate, Math.ceil(endlessWeeksBefore / 4));
+
+      for (let i = -Math.ceil(endlessWeeksBefore / 4); i < monthsToShow; i++) {
         const targetDate = addMonths(currentDate, i);
         const monthStart = startOfMonth(targetDate);
         const monthEnd = endOfMonth(targetDate);
@@ -409,7 +413,7 @@ const Index = () => {
         };
       });
     }
-  }, [currentDate, endlessMode, monthsToShow]);
+  }, [currentDate, endlessMode, monthsToShow, endlessWeeksBefore]);
 
   // Filtro settimane e categorie
   const filteredWeeks = useMemo(() => {
@@ -940,6 +944,8 @@ const Index = () => {
           onOpacityChange={setCellOpacity}
           endlessMode={endlessMode}
           onEndlessModeChange={handleEndlessModeToggle}
+          endlessWeeksBefore={endlessWeeksBefore}
+          onEndlessWeeksBeforeChange={setEndlessWeeksBefore}
           isConnecting={isConnecting}
           isConnected={isConnected}
           pendingEventsCount={pendingEventsCount}
