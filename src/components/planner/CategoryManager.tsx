@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Category, CategoryFeatures, DEFAULT_CATEGORY_FEATURES } from "@/types/planner";
+import { Category, CategoryFeatures, DEFAULT_CATEGORY_FEATURES, ContentTemplate } from "@/types/planner";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Settings, Trash2, Pencil, GripVertical, Plus, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Settings, Trash2, Pencil, GripVertical, Plus, ChevronDown, ChevronUp, LayoutTemplate } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,8 +38,9 @@ import { cn } from "@/lib/utils";
 
 interface CategoryManagerProps {
   categories: Category[];
-  onAddCategory: (name: string, color: string, features?: CategoryFeatures) => void;
-  onUpdateCategory: (id: string, name: string, color: string, features?: CategoryFeatures) => void;
+  templates: ContentTemplate[];
+  onAddCategory: (name: string, color: string, features?: CategoryFeatures, defaultTemplateId?: string, secondaryTemplateId?: string) => void;
+  onUpdateCategory: (id: string, name: string, color: string, features?: CategoryFeatures, defaultTemplateId?: string, secondaryTemplateId?: string) => void;
   onDeleteCategory: (id: string) => void;
   onReorderCategories?: (categories: Category[]) => void;
 }
@@ -48,6 +56,7 @@ const FEATURE_LABELS: Record<keyof CategoryFeatures, string> = {
 
 export const CategoryManager = ({
   categories,
+  templates,
   onAddCategory,
   onUpdateCategory,
   onDeleteCategory,
@@ -58,7 +67,10 @@ export const CategoryManager = ({
   const [name, setName] = useState("");
   const [color, setColor] = useState("210 100% 50%");
   const [features, setFeatures] = useState<CategoryFeatures>({ ...DEFAULT_CATEGORY_FEATURES });
+  const [defaultTemplateId, setDefaultTemplateId] = useState<string | undefined>();
+  const [secondaryTemplateId, setSecondaryTemplateId] = useState<string | undefined>();
   const [featuresOpen, setFeaturesOpen] = useState(false);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -69,7 +81,10 @@ export const CategoryManager = ({
     setName(category.name);
     setColor(category.color);
     setFeatures(category.features || { ...DEFAULT_CATEGORY_FEATURES });
+    setDefaultTemplateId(category.defaultTemplateId);
+    setSecondaryTemplateId(category.secondaryTemplateId);
     setFeaturesOpen(false);
+    setTemplatesOpen(false);
   };
 
   const handleStartAdd = () => {
@@ -77,23 +92,29 @@ export const CategoryManager = ({
     setName("");
     setColor("210 100% 50%");
     setFeatures({ ...DEFAULT_CATEGORY_FEATURES });
+    setDefaultTemplateId(undefined);
+    setSecondaryTemplateId(undefined);
     setFeaturesOpen(false);
+    setTemplatesOpen(false);
   };
 
   const handleSave = () => {
     if (!name.trim()) return;
     
     if (editingId) {
-      onUpdateCategory(editingId, name.trim(), color, features);
+      onUpdateCategory(editingId, name.trim(), color, features, defaultTemplateId, secondaryTemplateId);
     } else {
-      onAddCategory(name.trim(), color, features);
+      onAddCategory(name.trim(), color, features, defaultTemplateId, secondaryTemplateId);
     }
     
     setEditingId(null);
     setName("");
     setColor("210 100% 50%");
     setFeatures({ ...DEFAULT_CATEGORY_FEATURES });
+    setDefaultTemplateId(undefined);
+    setSecondaryTemplateId(undefined);
     setFeaturesOpen(false);
+    setTemplatesOpen(false);
   };
 
   const handleDeleteClick = (id: string) => {

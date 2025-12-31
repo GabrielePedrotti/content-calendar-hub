@@ -25,6 +25,8 @@ export interface Category {
   color: string; // HSL format: "142 76% 45%"
   order?: number;
   features?: CategoryFeatures;
+  defaultTemplateId?: string; // Template used when clicking +
+  secondaryTemplateId?: string; // Template used when pressing 2 + clicking +
 }
 
 export interface PipelineStage {

@@ -42,6 +42,8 @@ import {
   isSameMonth,
   getMonth,
   getYear,
+  isToday,
+  isSameWeek,
 } from "date-fns";
 import { it } from "date-fns/locale";
 
@@ -110,6 +112,9 @@ const Index = () => {
   const [templates, setTemplates] = useState<ContentTemplate[]>([]);
   const [seriesList, setSeriesList] = useState<Series[]>([]);
   const [shortsPresets, setShortsPresets] = useState<ShortsPreset[]>([]);
+  
+  // Track if "2" key is pressed for secondary template
+  const [isSecondaryTemplateMode, setIsSecondaryTemplateMode] = useState(false);
 
   // Undo Stack interface (implementation after useWebSocket)
   interface UndoState {
@@ -328,6 +333,41 @@ const Index = () => {
     if (cachedData.categories.length > 0) setCategories(cachedData.categories);
     if (cachedData.vacations.length > 0) setVacations(cachedData.vacations.map(parseVacationDates));
   }, [loadFromLocalCache]);
+
+  // Keyboard shortcuts for "N" (new content) and "2" (secondary template mode)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      
+      // "N" opens new content dialog
+      if (e.key === "n" || e.key === "N") {
+        e.preventDefault();
+        handleAddContent();
+      }
+      
+      // "2" enables secondary template mode
+      if (e.key === "2") {
+        setIsSecondaryTemplateMode(true);
+      }
+    };
+    
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === "2") {
+        setIsSecondaryTemplateMode(false);
+      }
+    };
+    
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, []);
 
   // Save data to cache when it changes
   useEffect(() => {
@@ -573,22 +613,24 @@ const Index = () => {
   };
 
   // Gestione categorie
-  const handleAddCategory = (name: string, color: string, features?: CategoryFeatures) => {
+  const handleAddCategory = (name: string, color: string, features?: CategoryFeatures, defaultTemplateId?: string, secondaryTemplateId?: string) => {
     pushUndo("add_category");
     const newCategory: Category = {
       id: Date.now().toString(),
       name,
       color,
       features: features || { ...DEFAULT_CATEGORY_FEATURES },
+      defaultTemplateId,
+      secondaryTemplateId,
     };
     setCategories((prev) => [...prev, newCategory]);
     syncCategoryCreate(newCategory);
     toast.success(`Categoria "${name}" aggiunta`);
   };
 
-  const handleUpdateCategory = (id: string, name: string, color: string, features?: CategoryFeatures) => {
+  const handleUpdateCategory = (id: string, name: string, color: string, features?: CategoryFeatures, defaultTemplateId?: string, secondaryTemplateId?: string) => {
     pushUndo("update_category");
-    const updatedCategory: Category = { id, name, color, features };
+    const updatedCategory: Category = { id, name, color, features, defaultTemplateId, secondaryTemplateId };
     setCategories((prev) =>
       prev.map((cat) => (cat.id === id ? updatedCategory : cat))
     );
@@ -978,6 +1020,7 @@ const Index = () => {
             <>
               <CategoryManager
                 categories={categories}
+                templates={templates}
                 onAddCategory={handleAddCategory}
                 onUpdateCategory={handleUpdateCategory}
                 onDeleteCategory={handleDeleteCategory}
