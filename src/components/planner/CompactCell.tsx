@@ -28,7 +28,7 @@ interface CompactCellProps {
   date: Date;
   isVacation: boolean;
   vacationLabel?: string;
-  onEdit: (content?: ContentItem) => void;
+  onEdit: (content?: ContentItem, templateId?: string) => void;
   onDragStart: (content: ContentItem, isAltDrag: boolean) => void;
   onDragOver: (e: React.DragEvent) => void;
   onDrop: () => void;
@@ -43,6 +43,8 @@ interface CompactCellProps {
   cellOpacity: { empty: number; filled: number };
   maxContentsInRow: number;
   isDisabled?: boolean;
+  isPrimaryTemplateMode?: boolean;
+  isSecondaryTemplateMode?: boolean;
 }
 
 export const CompactCell = ({
@@ -67,6 +69,8 @@ export const CompactCell = ({
   cellOpacity,
   maxContentsInRow,
   isDisabled = false,
+  isPrimaryTemplateMode = false,
+  isSecondaryTemplateMode = false,
 }: CompactCellProps) => {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -105,6 +109,15 @@ export const CompactCell = ({
     // Shift, Ctrl, or Alt + Click = open full details
     if (e.shiftKey || e.ctrlKey || e.altKey) {
       onEdit(content);
+      return;
+    }
+    
+    // 1 or 2 key pressed = open popup with template
+    if (!content && (isPrimaryTemplateMode || isSecondaryTemplateMode)) {
+      const templateId = isSecondaryTemplateMode 
+        ? category.secondaryTemplateId 
+        : category.defaultTemplateId;
+      onEdit(undefined, templateId);
       return;
     }
 

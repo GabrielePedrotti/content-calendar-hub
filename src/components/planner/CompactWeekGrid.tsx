@@ -12,7 +12,7 @@ interface CompactWeekGridProps {
   categories: Category[];
   contents: ContentItem[];
   vacations: VacationPeriod[];
-  onEditContent: (content?: ContentItem, categoryId?: string, date?: Date) => void;
+  onEditContent: (content?: ContentItem, categoryId?: string, date?: Date, templateId?: string) => void;
   onSaveContent: (content: Omit<ContentItem, "id"> & { id?: string }) => void;
   onDragStart: (content: ContentItem, isAltDrag: boolean) => void;
   onDragOver: (categoryId: string, date: Date) => void;
@@ -29,6 +29,8 @@ interface CompactWeekGridProps {
   cellOpacity: { empty: number; filled: number };
   endlessMode: boolean;
   monthLabelDate?: Date;
+  isPrimaryTemplateMode?: boolean;
+  isSecondaryTemplateMode?: boolean;
 }
 
 export const CompactWeekGrid = ({
@@ -54,6 +56,8 @@ export const CompactWeekGrid = ({
   cellOpacity,
   endlessMode,
   monthLabelDate,
+  isPrimaryTemplateMode = false,
+  isSecondaryTemplateMode = false,
 }: CompactWeekGridProps) => {
   const [dayDialogOpen, setDayDialogOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
@@ -220,8 +224,8 @@ export const CompactWeekGrid = ({
                         date={day.date}
                         isVacation={!!vacationForDay}
                         vacationLabel={vacationForDay?.label}
-                        onEdit={(content) =>
-                          onEditContent(content, category.id, day.date)
+                        onEdit={(content, templateId) =>
+                          onEditContent(content, category.id, day.date, templateId)
                         }
                         onDragStart={onDragStart}
                         onDragOver={(e) => onDragOver(category.id, day.date)}
@@ -239,6 +243,8 @@ export const CompactWeekGrid = ({
                         cellOpacity={cellOpacity}
                         maxContentsInRow={maxInRow}
                         isDisabled={isDisabled}
+                        isPrimaryTemplateMode={isPrimaryTemplateMode}
+                        isSecondaryTemplateMode={isSecondaryTemplateMode}
                       />
                     );
                   })}
