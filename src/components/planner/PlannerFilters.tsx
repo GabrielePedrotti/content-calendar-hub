@@ -93,8 +93,8 @@ export const PlannerFilters = ({
               )}
               
               {/* Search Results Dropdown */}
-              {searchQuery && isFocused && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-lg z-50 overflow-hidden">
+              {searchQuery && (
+                <div className="absolute top-full left-0 w-72 mt-1 bg-popover border border-border rounded-md shadow-lg z-50 overflow-hidden">
                   {searchResults.length === 0 ? (
                     <div className="p-3 text-xs text-muted-foreground text-center">
                       Nessun risultato trovato
