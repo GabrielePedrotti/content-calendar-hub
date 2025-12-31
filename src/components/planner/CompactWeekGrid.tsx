@@ -95,7 +95,7 @@ export const CompactWeekGrid = ({
   };
 
   return (
-    <div className="mb-8">
+    <div className="mb-8" data-week-number={weekNumber}>
       <div className="mb-2 text-sm font-semibold text-muted-foreground px-2">
         Settimana {weekNumber}
       </div>

@@ -231,6 +231,51 @@ export const CategoryManager = ({
                     </div>
                   </CollapsibleContent>
                 </Collapsible>
+
+                {/* Templates Section */}
+                <Collapsible open={templatesOpen} onOpenChange={setTemplatesOpen}>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" className="w-full justify-between text-sm">
+                      <span className="flex items-center gap-2">
+                        <LayoutTemplate className="h-4 w-4" />
+                        Template di categoria
+                      </span>
+                      {templatesOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pt-2">
+                    <div className="grid gap-3 p-3 bg-muted/30 rounded-lg">
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-1 block">Template Primario (click su +)</Label>
+                        <Select value={defaultTemplateId || "none"} onValueChange={(v) => setDefaultTemplateId(v === "none" ? undefined : v)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Nessun template" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Nessun template</SelectItem>
+                            {templates.map((t) => (
+                              <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-1 block">Template Secondario (tieni 2 + click)</Label>
+                        <Select value={secondaryTemplateId || "none"} onValueChange={(v) => setSecondaryTemplateId(v === "none" ? undefined : v)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Nessun template" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Nessun template</SelectItem>
+                            {templates.map((t) => (
+                              <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
               </div>
               <div className="flex gap-2">
                 <Button onClick={handleSave} className="flex-1">

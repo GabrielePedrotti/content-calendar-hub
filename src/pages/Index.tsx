@@ -520,6 +520,36 @@ const Index = () => {
     }
   };
 
+  // Auto-scroll to current week on mount
+  useEffect(() => {
+    const scrollToCurrentWeek = () => {
+      const container = scrollContainerRef.current;
+      if (!container) return;
+
+      // Find the current week element
+      const todayWeek = weeks.find((week) =>
+        week.days.some((day) => isToday(day.date))
+      );
+      if (!todayWeek) return;
+
+      // Get all week elements
+      const weekElements = container.querySelectorAll('[data-week-number]');
+      const currentWeekElement = container.querySelector(`[data-week-number="${todayWeek.weekNumber}"]`);
+      
+      if (currentWeekElement) {
+        const containerHeight = container.clientHeight;
+        const elementTop = (currentWeekElement as HTMLElement).offsetTop;
+        // Scroll so that current week is roughly in the center (second position)
+        const scrollPosition = elementTop - containerHeight / 4;
+        container.scrollTo({ top: Math.max(0, scrollPosition), behavior: 'auto' });
+      }
+    };
+
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(scrollToCurrentWeek, 100);
+    return () => clearTimeout(timer);
+  }, [weeks]);
+
   const handleAddContent = () => {
     setEditingContent(undefined);
     setPreselectedCategory(undefined);
