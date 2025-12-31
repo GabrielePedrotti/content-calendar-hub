@@ -32,8 +32,8 @@ All colors MUST be HSL.
     --destructive: 0 70% 55%;
     --destructive-foreground: 210 20% 98%;
 
-    --border: 220 15% 22%;
-    --input: 220 15% 22%;
+    --border: 220 15% 18%;
+    --input: 220 15% 20%;
     --ring: 210 100% 60%;
 
     --radius: 0.5rem;
