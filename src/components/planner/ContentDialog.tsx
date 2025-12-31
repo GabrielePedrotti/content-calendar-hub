@@ -55,6 +55,7 @@ interface ContentDialogProps {
   categories: Category[];
   preselectedCategory?: string;
   preselectedDate?: Date;
+  preselectedTemplateId?: string;
   onSave: (content: Omit<ContentItem, "id"> & { id?: string }, shortsPresetId?: string) => void;
   onDelete?: (id: string) => void;
   allContents: ContentItem[];
@@ -69,6 +70,7 @@ export const ContentDialog = ({
   categories,
   preselectedCategory,
   preselectedDate,
+  preselectedTemplateId,
   onSave,
   onDelete,
   allContents,
@@ -130,11 +132,35 @@ export const ContentDialog = ({
       setPriority("medium");
       setPipelineStageId("");
       setChecklist([]);
-      setSelectedTemplateId("");
       setGenerateShorts(false);
       setSelectedPresetId("");
+      
+      // Apply preselected template if provided
+      if (preselectedTemplateId) {
+        const template = templates.find((t) => t.id === preselectedTemplateId);
+        if (template) {
+          setSelectedTemplateId(preselectedTemplateId);
+          setContentType(template.contentType);
+          if (template.defaultCategoryId) {
+            setCategoryId(template.defaultCategoryId);
+          }
+          if (template.defaultPipeline.length > 0) {
+            setPipelineStageId(template.defaultPipeline[0].id);
+          }
+          setChecklist(
+            template.defaultChecklist.map((item, idx) => ({
+              id: `check-${Date.now()}-${idx}`,
+              label: item.label,
+              isDone: false,
+              order: item.order,
+            }))
+          );
+        }
+      } else {
+        setSelectedTemplateId("");
+      }
     }
-  }, [content, preselectedCategory, preselectedDate, categories, open]);
+  }, [content, preselectedCategory, preselectedDate, preselectedTemplateId, categories, templates, open]);
 
   // Apply template when selected
   const handleTemplateChange = (templateId: string) => {
@@ -171,6 +197,17 @@ export const ContentDialog = ({
 
   const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
   const pipelineStages = selectedTemplate?.defaultPipeline || DEFAULT_PIPELINE_STAGES;
+  
+  // Get current category features
+  const currentCategory = categories.find((c) => c.id === categoryId);
+  const categoryFeatures = currentCategory?.features || {
+    notes: true,
+    pipeline: true,
+    checklist: true,
+    priority: true,
+    contentType: true,
+    linkedContent: true,
+  };
 
   const handleSave = () => {
     if (title && categoryId && date) {
@@ -263,44 +300,50 @@ export const ContentDialog = ({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label>Tipo</Label>
-              <Select value={contentType} onValueChange={(v) => setContentType(v as ContentType)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(CONTENT_TYPE_LABELS).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {(categoryFeatures.contentType || categoryFeatures.priority) && (
+            <div className="grid grid-cols-2 gap-4">
+              {categoryFeatures.contentType && (
+                <div className="grid gap-2">
+                  <Label>Tipo</Label>
+                  <Select value={contentType} onValueChange={(v) => setContentType(v as ContentType)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(CONTENT_TYPE_LABELS).map(([key, label]) => (
+                        <SelectItem key={key} value={key}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {categoryFeatures.priority && (
+                <div className="grid gap-2">
+                  <Label>Priorità</Label>
+                  <Select value={priority} onValueChange={(v) => setPriority(v as Priority)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(PRIORITY_CONFIG).map(([key, config]) => (
+                        <SelectItem key={key} value={key}>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-2 h-2 rounded-full"
+                              style={{ backgroundColor: `hsl(${config.color})` }}
+                            />
+                            {config.label}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
-            <div className="grid gap-2">
-              <Label>Priorità</Label>
-              <Select value={priority} onValueChange={(v) => setPriority(v as Priority)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(PRIORITY_CONFIG).map(([key, config]) => (
-                    <SelectItem key={key} value={key}>
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: `hsl(${config.color})` }}
-                        />
-                        {config.label}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
@@ -366,60 +409,67 @@ export const ContentDialog = ({
           {/* Pipeline & Checklist Accordion */}
           <Accordion type="multiple" className="w-full">
             {/* Pipeline */}
-            <AccordionItem value="pipeline">
-              <AccordionTrigger className="text-sm">
-                <div className="flex items-center gap-2">
-                  Pipeline
-                  {pipelineStageId && (
-                    <Badge variant="outline" className="text-xs font-normal">
-                      {pipelineStages.find((s) => s.id === pipelineStageId)?.name || "N/A"}
-                    </Badge>
-                  )}
-                </div>
-              </AccordionTrigger>
-              <AccordionContent>
-                <PipelineStepper
-                  stages={pipelineStages}
-                  currentStageId={pipelineStageId}
-                  onStageClick={setPipelineStageId}
-                />
-              </AccordionContent>
-            </AccordionItem>
+            {categoryFeatures.pipeline && (
+              <AccordionItem value="pipeline">
+                <AccordionTrigger className="text-sm">
+                  <div className="flex items-center gap-2">
+                    Pipeline
+                    {pipelineStageId && (
+                      <Badge variant="outline" className="text-xs font-normal">
+                        {pipelineStages.find((s) => s.id === pipelineStageId)?.name || "N/A"}
+                      </Badge>
+                    )}
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <PipelineStepper
+                    stages={pipelineStages}
+                    currentStageId={pipelineStageId}
+                    onStageClick={setPipelineStageId}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+            )}
 
             {/* Checklist */}
-            <AccordionItem value="checklist">
-              <AccordionTrigger className="text-sm">
-                <div className="flex items-center gap-2">
-                  Checklist
-                  {checklist.length > 0 && (
-                    <Badge variant="outline" className="text-xs font-normal">
-                      {completedChecklist}/{checklist.length} ({checklistProgress}%)
-                    </Badge>
-                  )}
-                </div>
-              </AccordionTrigger>
-              <AccordionContent>
-                <ChecklistEditor items={checklist} onChange={setChecklist} />
-              </AccordionContent>
-            </AccordionItem>
+            {categoryFeatures.checklist && (
+              <AccordionItem value="checklist">
+                <AccordionTrigger className="text-sm">
+                  <div className="flex items-center gap-2">
+                    Checklist
+                    {checklist.length > 0 && (
+                      <Badge variant="outline" className="text-xs font-normal">
+                        {completedChecklist}/{checklist.length} ({checklistProgress}%)
+                      </Badge>
+                    )}
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <ChecklistEditor items={checklist} onChange={setChecklist} />
+                </AccordionContent>
+              </AccordionItem>
+            )}
 
             {/* Notes */}
-            <AccordionItem value="notes">
-              <AccordionTrigger className="text-sm">
-                Note
-                {notes && <Badge variant="outline" className="text-xs font-normal ml-2">✓</Badge>}
-              </AccordionTrigger>
-              <AccordionContent>
-                <Textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Aggiungi note..."
-                  rows={3}
-                />
-              </AccordionContent>
-            </AccordionItem>
+            {categoryFeatures.notes && (
+              <AccordionItem value="notes">
+                <AccordionTrigger className="text-sm">
+                  Note
+                  {notes && <Badge variant="outline" className="text-xs font-normal ml-2">✓</Badge>}
+                </AccordionTrigger>
+                <AccordionContent>
+                  <Textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Aggiungi note..."
+                    rows={3}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+            )}
 
             {/* Linked Content */}
+            {categoryFeatures.linkedContent && (
             <AccordionItem value="linked">
               <AccordionTrigger className="text-sm">
                 Contenuto Collegato
@@ -462,6 +512,7 @@ export const ContentDialog = ({
                 )}
               </AccordionContent>
             </AccordionItem>
+            )}
           </Accordion>
 
           {/* Shorts Generation (only for new video content) */}

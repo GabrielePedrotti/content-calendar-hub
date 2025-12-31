@@ -76,6 +76,7 @@ const Index = () => {
   const [editingContent, setEditingContent] = useState<ContentItem | undefined>();
   const [preselectedCategory, setPreselectedCategory] = useState<string | undefined>();
   const [preselectedDate, setPreselectedDate] = useState<Date | undefined>();
+  const [preselectedTemplateId, setPreselectedTemplateId] = useState<string | undefined>();
   const [viewMode, setViewMode] = useState<"planner" | "task" | "tasklist">("planner");
   const [cellOpacity, setCellOpacity] = useState({ empty: 8, filled: 35 });
   const [endlessMode, setEndlessMode] = useState(false);
@@ -334,7 +335,10 @@ const Index = () => {
     if (cachedData.vacations.length > 0) setVacations(cachedData.vacations.map(parseVacationDates));
   }, [loadFromLocalCache]);
 
-  // Keyboard shortcuts for "N" (new content) and "2" (secondary template mode)
+  // Track if "1" key is pressed for primary template mode (force popup open)
+  const [isPrimaryTemplateMode, setIsPrimaryTemplateMode] = useState(false);
+
+  // Keyboard shortcuts for "N" (new content), "1" (primary template mode), and "2" (secondary template mode)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ignore if typing in an input
@@ -348,6 +352,11 @@ const Index = () => {
         handleAddContent();
       }
       
+      // "1" enables primary template mode (opens popup on cell click)
+      if (e.key === "1") {
+        setIsPrimaryTemplateMode(true);
+      }
+      
       // "2" enables secondary template mode
       if (e.key === "2") {
         setIsSecondaryTemplateMode(true);
@@ -355,6 +364,9 @@ const Index = () => {
     };
     
     const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === "1") {
+        setIsPrimaryTemplateMode(false);
+      }
       if (e.key === "2") {
         setIsSecondaryTemplateMode(false);
       }
@@ -554,17 +566,20 @@ const Index = () => {
     setEditingContent(undefined);
     setPreselectedCategory(undefined);
     setPreselectedDate(undefined);
+    setPreselectedTemplateId(undefined);
     setDialogOpen(true);
   };
 
   const handleEditContent = (
     content?: ContentItem,
     categoryId?: string,
-    date?: Date
+    date?: Date,
+    templateId?: string
   ) => {
     setEditingContent(content);
     setPreselectedCategory(categoryId);
     setPreselectedDate(date);
+    setPreselectedTemplateId(templateId);
     setDialogOpen(true);
   };
 
@@ -1175,6 +1190,8 @@ const Index = () => {
                         cellOpacity={cellOpacity}
                         endlessMode={endlessMode}
                         monthLabelDate={week.monthLabelDate}
+                        isPrimaryTemplateMode={isPrimaryTemplateMode}
+                        isSecondaryTemplateMode={isSecondaryTemplateMode}
                       />
                     </div>
                   );
@@ -1207,6 +1224,8 @@ const Index = () => {
                   cellOpacity={cellOpacity}
                   endlessMode={false}
                   monthLabelDate={week.monthLabelDate}
+                  isPrimaryTemplateMode={isPrimaryTemplateMode}
+                  isSecondaryTemplateMode={isSecondaryTemplateMode}
                 />
               ))
             )}
@@ -1240,6 +1259,7 @@ const Index = () => {
         categories={categories}
         preselectedCategory={preselectedCategory}
         preselectedDate={preselectedDate}
+        preselectedTemplateId={preselectedTemplateId}
         onSave={handleSaveContent}
         onDelete={handleDeleteContent}
         allContents={contents}
