@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { ReactNode } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { BlackjackGame } from "./BlackjackGame";
 
 interface PlannerHeaderProps {
   currentDate: Date;
@@ -221,6 +222,8 @@ export const PlannerHeader = ({
             </div>
           </PopoverContent>
         </Popover>
+        
+        <BlackjackGame />
         
         <Button onClick={onAddContent} size="sm" className="gap-1 h-7 text-xs">
           <Plus className="h-3 w-3" />
