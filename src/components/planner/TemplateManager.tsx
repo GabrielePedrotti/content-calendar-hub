@@ -35,6 +35,7 @@ import {
   Copy,
   Pencil,
   LayoutTemplate,
+  Clapperboard,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -64,6 +65,7 @@ const createDefaultTemplate = (): Omit<ContentTemplate, "id"> => ({
     label: item.label,
     order: item.order,
   })),
+  linkedShortTemplateId: undefined,
 });
 
 export const TemplateManager = ({
@@ -98,6 +100,7 @@ export const TemplateManager = ({
       defaultPipeline: template.defaultPipeline,
       defaultChecklist: template.defaultChecklist,
       durationEstimate: template.durationEstimate,
+      linkedShortTemplateId: template.linkedShortTemplateId,
     });
     setOpen(true);
   };
@@ -382,6 +385,42 @@ export const TemplateManager = ({
                   padre, {"{date}"} = data, {"{series_n}"} = numero serie
                 </p>
               </div>
+
+              {/* Linked Short Template - only for video type */}
+              {formData.contentType === "video" && (
+                <div className="space-y-2 p-3 rounded-lg border border-primary/20 bg-primary/5">
+                  <Label className="flex items-center gap-2">
+                    <Clapperboard className="h-4 w-4 text-primary" />
+                    Template Short Collegato
+                  </Label>
+                  <Select
+                    value={formData.linkedShortTemplateId || "none"}
+                    onValueChange={(v) =>
+                      setFormData({
+                        ...formData,
+                        linkedShortTemplateId: v === "none" ? undefined : v,
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Nessuno" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Nessuno</SelectItem>
+                      {templates
+                        .filter((t) => t.contentType === "short" && t.id !== editingTemplate?.id)
+                        .map((t) => (
+                          <SelectItem key={t.id} value={t.id}>
+                            {t.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Quando crei un video con questo template, lo short verrà configurato automaticamente con il template selezionato.
+                  </p>
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="pipeline" className="space-y-4 mt-4 flex-1 overflow-y-auto">

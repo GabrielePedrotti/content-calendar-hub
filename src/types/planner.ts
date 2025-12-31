@@ -98,6 +98,7 @@ export interface ContentTemplate {
   defaultPipeline: PipelineStage[];
   defaultChecklist: Omit<ChecklistItem, 'id' | 'isDone'>[];
   durationEstimate?: number;
+  linkedShortTemplateId?: string; // Template to use for auto-generated shorts
 }
 
 // Series system (advanced repetitions)
