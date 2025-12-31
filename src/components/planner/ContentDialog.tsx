@@ -38,12 +38,14 @@ import {
   PRIORITY_CONFIG,
   DEFAULT_PIPELINE_STAGES,
 } from "@/types/planner";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { it } from "date-fns/locale";
-import { Trash2, Link2, X, Clapperboard, Sparkles, ChevronRight } from "lucide-react";
+import { Trash2, Link2, X, Clapperboard, Sparkles, ChevronRight, CalendarDays } from "lucide-react";
 import { LinkedContentSelector } from "./LinkedContentSelector";
 import { PipelineStepper } from "./PipelineStepper";
 import { ChecklistEditor } from "./ChecklistEditor";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 interface ContentDialogProps {
@@ -327,14 +329,27 @@ export const ContentDialog = ({
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="date">Data</Label>
-              <Input
-                id="date"
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="[color-scheme:dark]"
-              />
+              <Label>Data</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn("w-full justify-start text-left font-normal")}
+                  >
+                    <CalendarDays className="h-4 w-4 mr-2" />
+                    {date ? format(parseISO(date), "d MMM yyyy", { locale: it }) : "Seleziona data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={date ? parseISO(date) : undefined}
+                    onSelect={(d) => d && setDate(format(d, "yyyy-MM-dd"))}
+                    locale={it}
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
