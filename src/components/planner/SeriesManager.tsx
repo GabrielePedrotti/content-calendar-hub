@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Series, ContentTemplate } from "@/types/planner";
+import { Series, ContentTemplate, Category } from "@/types/planner";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +24,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import {
@@ -35,6 +36,7 @@ import {
   Play,
   Pause,
   RefreshCw,
+  Copy,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -51,6 +53,7 @@ import { cn } from "@/lib/utils";
 interface SeriesManagerProps {
   series: Series[];
   templates: ContentTemplate[];
+  categories: Category[];
   onAddSeries: (series: Series) => void;
   onUpdateSeries: (series: Series) => void;
   onDeleteSeries: (id: string) => void;
@@ -59,16 +62,20 @@ interface SeriesManagerProps {
 
 const PATTERN_LABELS: Record<Series["pattern"], string> = {
   daily: "Giornaliero",
-  weekdays: "Giorni feriali",
+  weekdays: "Giorni feriali (Lun-Ven)",
   weekly: "Settimanale",
   biweekly: "Ogni 2 settimane",
   monthly: "Mensile",
+  custom: "Pattern personalizzato",
 };
+
+const DAY_LABELS = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
 
 const createDefaultSeries = (): Omit<Series, "id"> => ({
   name: "",
   templateId: "",
   pattern: "weekly",
+  customDays: [],
   startDate: new Date(),
   options: {
     skipWeekends: false,
@@ -82,6 +89,7 @@ const createDefaultSeries = (): Omit<Series, "id"> => ({
 export const SeriesManager = ({
   series,
   templates,
+  categories,
   onAddSeries,
   onUpdateSeries,
   onDeleteSeries,
@@ -105,7 +113,9 @@ export const SeriesManager = ({
     setFormData({
       name: s.name,
       templateId: s.templateId,
+      categoryId: s.categoryId,
       pattern: s.pattern,
+      customDays: s.customDays || [],
       startDate: s.startDate,
       endDate: s.endDate,
       occurrencesCount: s.occurrencesCount,
@@ -116,8 +126,23 @@ export const SeriesManager = ({
     setOpen(true);
   };
 
+  const handleDuplicate = (s: Series) => {
+    const duplicated: Series = {
+      ...s,
+      id: `series-${Date.now()}`,
+      name: `${s.name} (copia)`,
+      currentNumber: 1,
+    };
+    onAddSeries(duplicated);
+  };
+
   const handleSave = () => {
-    if (!formData.name.trim() || !formData.templateId) return;
+    if (!formData.name.trim()) return;
+
+    // Validate custom pattern has at least one day selected
+    if (formData.pattern === "custom" && (!formData.customDays || formData.customDays.length === 0)) {
+      return;
+    }
 
     if (editingSeries) {
       onUpdateSeries({
@@ -150,6 +175,22 @@ export const SeriesManager = ({
     setSeriesToDelete(null);
   };
 
+  const toggleCustomDay = (day: number) => {
+    const current = formData.customDays || [];
+    if (current.includes(day)) {
+      setFormData({ ...formData, customDays: current.filter((d) => d !== day) });
+    } else {
+      setFormData({ ...formData, customDays: [...current, day].sort() });
+    }
+  };
+
+  const getPatternDescription = (s: Series) => {
+    if (s.pattern === "custom" && s.customDays && s.customDays.length > 0) {
+      return s.customDays.map((d) => DAY_LABELS[d]).join(", ");
+    }
+    return PATTERN_LABELS[s.pattern];
+  };
+
   return (
     <>
       <Button variant="outline" onClick={() => setListOpen(true)} className="gap-2">
@@ -164,7 +205,7 @@ export const SeriesManager = ({
 
       {/* Series List Dialog */}
       <Dialog open={listOpen} onOpenChange={setListOpen}>
-        <DialogContent className="sm:max-w-[600px] h-[70vh] flex flex-col overflow-hidden">
+        <DialogContent className="sm:max-w-[650px] h-[75vh] flex flex-col overflow-hidden">
           <DialogHeader className="flex-shrink-0">
             <DialogTitle className="flex items-center justify-between">
               <span>Gestione Serie</span>
@@ -177,13 +218,18 @@ export const SeriesManager = ({
 
           <div className="space-y-3 flex-1 overflow-y-auto">
             {series.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">
-                Nessuna serie configurata. Crea una serie per generare contenuti
-                ricorrenti automaticamente.
-              </p>
+              <div className="text-center py-8 space-y-2">
+                <p className="text-muted-foreground">
+                  Nessuna serie configurata.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Crea una serie per generare contenuti ricorrenti automaticamente.
+                </p>
+              </div>
             ) : (
               series.map((s) => {
                 const template = templates.find((t) => t.id === s.templateId);
+                const category = categories.find((c) => c.id === s.categoryId);
                 return (
                   <div
                     key={s.id}
@@ -208,8 +254,16 @@ export const SeriesManager = ({
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {PATTERN_LABELS[s.pattern]} • Template:{" "}
+                        {getPatternDescription(s)} • Template:{" "}
                         {template?.name || "N/A"} • Ep. {s.currentNumber}
+                        {category && (
+                          <>
+                            {" "}•{" "}
+                            <span style={{ color: `hsl(${category.color})` }}>
+                              {category.name}
+                            </span>
+                          </>
+                        )}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         Da {format(s.startDate, "d MMM yyyy", { locale: it })}
@@ -236,9 +290,17 @@ export const SeriesManager = ({
                         variant="ghost"
                         size="icon"
                         onClick={() => onGenerateOccurrences(s.id)}
-                        title="Genera prossime occorrenze"
+                        title="Genera prossima occorrenza"
                       >
                         <RefreshCw className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDuplicate(s)}
+                        title="Duplica serie"
+                      >
+                        <Copy className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -265,7 +327,7 @@ export const SeriesManager = ({
 
       {/* Add/Edit Series Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-[500px] h-[85vh] flex flex-col overflow-hidden">
+        <DialogContent className="sm:max-w-[550px] h-[85vh] flex flex-col overflow-hidden">
           <DialogHeader className="flex-shrink-0">
             <DialogTitle>
               {editingSeries ? "Modifica Serie" : "Nuova Serie"}
@@ -284,49 +346,106 @@ export const SeriesManager = ({
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>Template</Label>
-              <Select
-                value={formData.templateId}
-                onValueChange={(v) =>
-                  setFormData({ ...formData, templateId: v })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleziona template" />
-                </SelectTrigger>
-                <SelectContent>
-                  {templates.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Frequenza</Label>
+                <Label>Template</Label>
                 <Select
-                  value={formData.pattern}
+                  value={formData.templateId || "none"}
                   onValueChange={(v) =>
-                    setFormData({ ...formData, pattern: v as Series["pattern"] })
+                    setFormData({ ...formData, templateId: v === "none" ? "" : v })
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Seleziona template" />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(PATTERN_LABELS).map(([key, label]) => (
-                      <SelectItem key={key} value={key}>
-                        {label}
+                    <SelectItem value="none">Nessuno</SelectItem>
+                    {templates.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
+              <div className="space-y-2">
+                <Label>Categoria</Label>
+                <Select
+                  value={formData.categoryId || "none"}
+                  onValueChange={(v) =>
+                    setFormData({ ...formData, categoryId: v === "none" ? undefined : v })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Eredita da template" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Eredita da template</SelectItem>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: `hsl(${cat.color})` }}
+                          />
+                          {cat.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Frequenza</Label>
+              <Select
+                value={formData.pattern}
+                onValueChange={(v) =>
+                  setFormData({ ...formData, pattern: v as Series["pattern"] })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(PATTERN_LABELS).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Custom days selector */}
+            {formData.pattern === "custom" && (
+              <div className="space-y-2 p-3 rounded-lg border bg-muted/30">
+                <Label>Giorni della settimana</Label>
+                <div className="flex flex-wrap gap-2">
+                  {DAY_LABELS.map((day, index) => (
+                    <Button
+                      key={index}
+                      type="button"
+                      variant={formData.customDays?.includes(index) ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => toggleCustomDay(index)}
+                      className="w-12"
+                    >
+                      {day}
+                    </Button>
+                  ))}
+                </div>
+                {formData.customDays && formData.customDays.length === 0 && (
+                  <p className="text-xs text-destructive">
+                    Seleziona almeno un giorno
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Data Inizio</Label>
                 <Popover>
@@ -348,9 +467,7 @@ export const SeriesManager = ({
                   </PopoverContent>
                 </Popover>
               </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Data Fine (opzionale)</Label>
                 <Popover>
@@ -374,7 +491,9 @@ export const SeriesManager = ({
                   </PopoverContent>
                 </Popover>
               </div>
+            </div>
 
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Numero Episodi (opzionale)</Label>
                 <Input
@@ -389,6 +508,21 @@ export const SeriesManager = ({
                     })
                   }
                   placeholder="Illimitato"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Numero Iniziale</Label>
+                <Input
+                  type="number"
+                  value={formData.currentNumber}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      currentNumber: parseInt(e.target.value) || 1,
+                    })
+                  }
+                  min={1}
                 />
               </div>
             </div>
@@ -436,13 +570,31 @@ export const SeriesManager = ({
                 />
               </div>
             </div>
+
+            {/* Preview */}
+            {formData.name && (
+              <div className="border rounded-lg p-3 bg-muted/30">
+                <p className="text-xs font-medium text-muted-foreground mb-2">
+                  Anteprima titolo
+                </p>
+                <p className="text-sm">
+                  {(formData.options.titlePattern || "{series_name} Ep. {n}")
+                    .replace("{series_name}", formData.name)
+                    .replace("{n}", formData.currentNumber.toString())
+                    .replace("{date}", format(formData.startDate, "d MMM", { locale: it }))}
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end gap-2 mt-4">
             <Button variant="outline" onClick={() => setOpen(false)}>
               Annulla
             </Button>
-            <Button onClick={handleSave}>
+            <Button 
+              onClick={handleSave}
+              disabled={formData.pattern === "custom" && (!formData.customDays || formData.customDays.length === 0)}
+            >
               {editingSeries ? "Salva" : "Crea Serie"}
             </Button>
           </div>

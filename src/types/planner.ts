@@ -106,7 +106,9 @@ export interface Series {
   id: string;
   name: string;
   templateId: string;
-  pattern: 'daily' | 'weekdays' | 'weekly' | 'biweekly' | 'monthly';
+  categoryId?: string;
+  pattern: 'daily' | 'weekdays' | 'weekly' | 'biweekly' | 'monthly' | 'custom';
+  customDays?: number[]; // 0-6 for Sun-Sat when pattern is 'custom'
   startDate: Date;
   endDate?: Date;
   occurrencesCount?: number;
@@ -119,17 +121,6 @@ export interface Series {
   currentNumber: number;
 }
 
-// Shorts preset system
-export interface ShortsPreset {
-  id: string;
-  name: string;
-  shortsCount: number;
-  offsets: number[]; // Days after parent video, e.g. [1, 2, 3]
-  shortTemplateId?: string;
-  shortCategoryId?: string;
-  titleRule: string; // e.g. "-Short {i}: {parent_title}"
-  defaultTime?: string; // e.g. "14:00"
-}
 
 // Default pipeline stages
 export const DEFAULT_PIPELINE_STAGES: PipelineStage[] = [
