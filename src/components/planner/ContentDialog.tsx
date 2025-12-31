@@ -30,7 +30,6 @@ import {
   Category,
   ContentItem,
   ContentTemplate,
-  ShortsPreset,
   ChecklistItem,
   ContentType,
   Priority,
@@ -56,11 +55,10 @@ interface ContentDialogProps {
   preselectedCategory?: string;
   preselectedDate?: Date;
   preselectedTemplateId?: string;
-  onSave: (content: Omit<ContentItem, "id"> & { id?: string }, shortsPresetId?: string, linkedShortTemplateId?: string) => void;
+  onSave: (content: Omit<ContentItem, "id"> & { id?: string }, linkedShortTemplateId?: string) => void;
   onDelete?: (id: string) => void;
   allContents: ContentItem[];
   templates?: ContentTemplate[];
-  shortsPresets?: ShortsPreset[];
 }
 
 export const ContentDialog = ({
@@ -75,7 +73,6 @@ export const ContentDialog = ({
   onDelete,
   allContents,
   templates = [],
-  shortsPresets = [],
 }: ContentDialogProps) => {
   const [title, setTitle] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -91,10 +88,6 @@ export const ContentDialog = ({
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [pipelineStageId, setPipelineStageId] = useState<string>("");
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
-  
-  // Shorts generation
-  const [generateShorts, setGenerateShorts] = useState(false);
-  const [selectedPresetId, setSelectedPresetId] = useState<string>("");
 
   // Get children (shorts) for this content
   const childContents = content
@@ -119,8 +112,6 @@ export const ContentDialog = ({
       setPipelineStageId(content.pipelineStageId || "");
       setChecklist(content.checklist || []);
       setSelectedTemplateId(content.templateId || "");
-      setGenerateShorts(false);
-      setSelectedPresetId("");
     } else {
       setTitle("");
       setCategoryId(preselectedCategory || categories[0]?.id || "");
@@ -132,8 +123,6 @@ export const ContentDialog = ({
       setPriority("medium");
       setPipelineStageId("");
       setChecklist([]);
-      setGenerateShorts(false);
-      setSelectedPresetId("");
       
       // Apply preselected template if provided
       if (preselectedTemplateId) {
@@ -242,15 +231,10 @@ export const ContentDialog = ({
         seriesId: content?.seriesId,
       };
       
-      // Pass shorts preset ID if generating shorts for new video content
-      const shortsPresetToUse = !content && generateShorts && selectedPresetId && contentType === "video" 
-        ? selectedPresetId 
-        : undefined;
-      
       // Pass linked short template ID from the selected template (for video type)
       const linkedShortTemplate = selectedTemplate?.linkedShortTemplateId;
       
-      onSave(savedContent, shortsPresetToUse, linkedShortTemplate);
+      onSave(savedContent, linkedShortTemplate);
       onOpenChange(false);
     }
   };
@@ -531,44 +515,6 @@ export const ContentDialog = ({
             </AccordionItem>
             )}
           </Accordion>
-
-          {/* Shorts Generation (only for new video content) */}
-          {!content && contentType === "video" && shortsPresets.length > 0 && (
-            <div className="p-3 rounded-lg border border-amber-500/20 bg-amber-500/5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Clapperboard className="h-4 w-4 text-amber-500" />
-                  <Label className="font-medium">Genera Shorts</Label>
-                </div>
-                <Switch
-                  checked={generateShorts}
-                  onCheckedChange={setGenerateShorts}
-                />
-              </div>
-              {generateShorts && (
-                <div className="mt-3">
-                  <Select value={selectedPresetId} onValueChange={setSelectedPresetId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleziona preset..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {shortsPresets.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name} ({p.shortsCount} shorts)
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {selectedPresetId && (
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Verranno creati {shortsPresets.find((p) => p.id === selectedPresetId)?.shortsCount} shorts
-                      nei giorni successivi
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Parent Content Link */}
           {parentContent && (

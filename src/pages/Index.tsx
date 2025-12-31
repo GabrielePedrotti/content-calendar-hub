@@ -4,7 +4,7 @@ import { CompactWeekGrid } from "@/components/planner/CompactWeekGrid";
 import { MonthSeparator } from "@/components/planner/MonthSeparator";
 import { ContentDialog } from "@/components/planner/ContentDialog";
 import { CategoryManager } from "@/components/planner/CategoryManager";
-import { SeriesCreator } from "@/components/planner/SeriesCreator";
+// SeriesCreator removed - functionality merged into SeriesManager
 import { PlannerFilters } from "@/components/planner/PlannerFilters";
 import { InfoDialog } from "@/components/planner/InfoDialog";
 import { VacationManager } from "@/components/planner/VacationManager";
@@ -12,10 +12,10 @@ import { TaskView } from "@/components/planner/TaskView";
 import { TaskListView } from "@/components/planner/TaskListView";
 import { TemplateManager } from "@/components/planner/TemplateManager";
 import { SeriesManager } from "@/components/planner/SeriesManager";
-import { ShortsPresetManager } from "@/components/planner/ShortsPresetManager";
+// ShortsPresetManager removed - functionality merged into SeriesManager
 import { LoginDialog } from "@/components/auth/LoginDialog";
 import { WebSocketSettings, getStoredWsUrl } from "@/components/settings/WebSocketSettings";
-import { Category, CategoryFeatures, DEFAULT_CATEGORY_FEATURES, ContentItem, WeekDay, SeriesConfig, VacationPeriod, ContentTemplate, Series, ShortsPreset } from "@/types/planner";
+import { Category, CategoryFeatures, DEFAULT_CATEGORY_FEATURES, ContentItem, WeekDay, VacationPeriod, ContentTemplate, Series } from "@/types/planner";
 import { User } from "@/types/auth";
 import { InitialDataPayload } from "@/types/sync";
 import { Button } from "@/components/ui/button";
@@ -109,10 +109,9 @@ const Index = () => {
   const [contents, setContents] = useState<ContentItem[]>([]);
   const [vacations, setVacations] = useState<VacationPeriod[]>([]);
 
-  // Templates, Series, Shorts Presets
+  // Templates, Series
   const [templates, setTemplates] = useState<ContentTemplate[]>([]);
   const [seriesList, setSeriesList] = useState<Series[]>([]);
-  const [shortsPresets, setShortsPresets] = useState<ShortsPreset[]>([]);
   
   // Track if "2" key is pressed for secondary template
   const [isSecondaryTemplateMode, setIsSecondaryTemplateMode] = useState(false);
@@ -585,7 +584,6 @@ const Index = () => {
 
   const handleSaveContent = (
     content: Omit<ContentItem, "id"> & { id?: string },
-    shortsPresetId?: string,
     linkedShortTemplateId?: string
   ) => {
     pushUndo("save_content");
@@ -650,10 +648,6 @@ const Index = () => {
       syncContentCreate(newContent);
       toast.success("Contenuto creato");
       
-      // Generate shorts if preset was selected
-      if (shortsPresetId) {
-        handleGenerateShorts(newContent, shortsPresetId);
-      }
       
       // Generate short from linked template (for video type with linked short template)
       if (linkedShortTemplateId && content.contentType === "video") {
@@ -802,100 +796,6 @@ const Index = () => {
     toast.success(`Generato: ${title}`);
   };
 
-  // Shorts Preset handlers
-  const handleAddShortsPreset = (preset: ShortsPreset) => {
-    setShortsPresets((prev) => [...prev, preset]);
-    toast.success(`Preset "${preset.name}" creato`);
-  };
-
-  const handleUpdateShortsPreset = (preset: ShortsPreset) => {
-    setShortsPresets((prev) => prev.map((p) => (p.id === preset.id ? preset : p)));
-    toast.success("Preset aggiornato");
-  };
-
-  const handleDeleteShortsPreset = (id: string) => {
-    setShortsPresets((prev) => prev.filter((p) => p.id !== id));
-    toast.success("Preset eliminato");
-  };
-
-  // Generate shorts from preset
-  const handleGenerateShorts = (parentContent: ContentItem, presetId: string) => {
-    const preset = shortsPresets.find((p) => p.id === presetId);
-    if (!preset) return;
-    
-    const template = templates.find((t) => t.id === preset.shortTemplateId);
-    const newShorts: ContentItem[] = [];
-    
-    for (let i = 0; i < preset.shortsCount; i++) {
-      const offset = preset.offsets[i] || i + 1;
-      const shortDate = addDays(parentContent.date, offset);
-      const title = preset.titleRule
-        .replace("{i}", (i + 1).toString())
-        .replace("{parent_title}", parentContent.title);
-      
-      const short: ContentItem = {
-        id: `short-${Date.now()}-${i}`,
-        title,
-        categoryId: preset.shortCategoryId || parentContent.categoryId,
-        date: shortDate,
-        published: false,
-        contentType: "short",
-        parentId: parentContent.id,
-        templateId: template?.id,
-        pipelineStageId: template?.defaultPipeline[0]?.id,
-        checklist: template?.defaultChecklist.map((item, idx) => ({
-          id: `check-${Date.now()}-${i}-${idx}`,
-          label: item.label,
-          isDone: false,
-          order: item.order,
-        })),
-      };
-      newShorts.push(short);
-    }
-    
-    setContents((prev) => [...prev, ...newShorts]);
-    newShorts.forEach((s) => syncContentCreate(s));
-    toast.success(`${newShorts.length} shorts generati`);
-    return newShorts;
-  };
-
-  // Creazione serie
-  const handleCreateSeries = (config: SeriesConfig) => {
-    const newContents: ContentItem[] = [];
-    let currentDate = config.startDate;
-
-    for (let i = config.startNumber; i <= config.endNumber; i++) {
-      // Salta weekend se la frequenza è "weekdays"
-      if (config.frequency === "weekdays") {
-        while (isWeekend(currentDate)) {
-          currentDate = addDays(currentDate, 1);
-        }
-      }
-
-      const newContent: ContentItem = {
-        id: `${Date.now()}_${i}`,
-        title: `${config.baseTitle} ${i}`,
-        categoryId: config.categoryId,
-        date: currentDate,
-        published: false,
-      };
-      newContents.push(newContent);
-
-      // Avanza alla data successiva
-      if (config.frequency === "daily") {
-        currentDate = addDays(currentDate, 1);
-      } else if (config.frequency === "weekdays") {
-        currentDate = addDays(currentDate, 1);
-      } else if (config.frequency === "weekly") {
-        currentDate = addWeeks(currentDate, 1);
-      }
-    }
-
-    setContents((prev) => [...prev, ...newContents]);
-    // Sync each new content to WebSocket
-    newContents.forEach(content => syncContentCreate(content));
-    toast.success(`Serie creata: ${newContents.length} contenuti aggiunti`);
-  };
 
   // Drag & Drop with ALT support
   const handleDragStart = (content: ContentItem, altPressed: boolean) => {
@@ -1118,22 +1018,11 @@ const Index = () => {
               <SeriesManager
                 series={seriesList}
                 templates={templates}
+                categories={categories}
                 onAddSeries={handleAddSeries}
                 onUpdateSeries={handleUpdateSeries}
                 onDeleteSeries={handleDeleteSeries}
                 onGenerateOccurrences={handleGenerateSeriesOccurrences}
-              />
-              <ShortsPresetManager
-                presets={shortsPresets}
-                templates={templates}
-                categories={categories}
-                onAddPreset={handleAddShortsPreset}
-                onUpdatePreset={handleUpdateShortsPreset}
-                onDeletePreset={handleDeleteShortsPreset}
-              />
-              <SeriesCreator
-                categories={categories}
-                onCreateSeries={handleCreateSeries}
               />
               <VacationManager
                 vacations={vacations}
@@ -1295,7 +1184,6 @@ const Index = () => {
         onDelete={handleDeleteContent}
         allContents={contents}
         templates={templates}
-        shortsPresets={shortsPresets}
       />
 
       <InfoDialog
