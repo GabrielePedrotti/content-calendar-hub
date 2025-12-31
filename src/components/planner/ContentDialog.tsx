@@ -55,12 +55,11 @@ interface ContentDialogProps {
   categories: Category[];
   preselectedCategory?: string;
   preselectedDate?: Date;
-  onSave: (content: Omit<ContentItem, "id"> & { id?: string }) => void;
+  onSave: (content: Omit<ContentItem, "id"> & { id?: string }, shortsPresetId?: string) => void;
   onDelete?: (id: string) => void;
   allContents: ContentItem[];
   templates?: ContentTemplate[];
   shortsPresets?: ShortsPreset[];
-  onGenerateShorts?: (content: ContentItem, presetId: string) => void;
 }
 
 export const ContentDialog = ({
@@ -75,7 +74,6 @@ export const ContentDialog = ({
   allContents,
   templates = [],
   shortsPresets = [],
-  onGenerateShorts,
 }: ContentDialogProps) => {
   const [title, setTitle] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -193,14 +191,12 @@ export const ContentDialog = ({
         seriesId: content?.seriesId,
       };
       
-      onSave(savedContent);
+      // Pass shorts preset ID if generating shorts for new video content
+      const shortsPresetToUse = !content && generateShorts && selectedPresetId && contentType === "video" 
+        ? selectedPresetId 
+        : undefined;
       
-      // Generate shorts if enabled and this is a new video
-      if (generateShorts && selectedPresetId && contentType === "video" && onGenerateShorts) {
-        // We need to wait for the content to be created with an ID
-        // This is handled in the parent component
-      }
-      
+      onSave(savedContent, shortsPresetToUse);
       onOpenChange(false);
     }
   };
