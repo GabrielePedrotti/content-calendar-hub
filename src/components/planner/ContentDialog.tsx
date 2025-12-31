@@ -333,6 +333,7 @@ export const ContentDialog = ({
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
+                className="[color-scheme:dark]"
               />
             </div>
           </div>
