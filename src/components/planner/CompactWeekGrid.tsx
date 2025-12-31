@@ -232,6 +232,7 @@ export const CompactWeekGrid = ({
                         onDrop={() => onDrop(category.id, day.date)}
                         onDuplicate={(content) => onDuplicate(content, day.date)}
                         onTogglePublished={onTogglePublished}
+                        onDelete={(content) => onDeleteContent(content.id)}
                         onQuickEdit={(content, newTitle) =>
                           onQuickEdit(content, category.id, day.date, newTitle)
                         }
