@@ -155,6 +155,13 @@ export const ContentDialog = ({
               order: item.order,
             }))
           );
+          // Apply title prefix/suffix
+          const baseTitle = "";
+          const prefix = template.titlePrefix || "";
+          const suffix = template.titleSuffix || "";
+          if (prefix || suffix) {
+            setTitle(`${prefix}${baseTitle}${suffix}`);
+          }
         }
       } else {
         setSelectedTemplateId("");
@@ -185,6 +192,13 @@ export const ContentDialog = ({
         order: item.order,
       }))
     );
+    // Apply title prefix/suffix
+    const currentTitle = title.trim();
+    const prefix = template.titlePrefix || "";
+    const suffix = template.titleSuffix || "";
+    if (prefix || suffix) {
+      setTitle(`${prefix}${currentTitle}${suffix}`);
+    }
   };
 
   const linkedContent = linkedContentId 
