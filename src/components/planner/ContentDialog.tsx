@@ -56,7 +56,7 @@ interface ContentDialogProps {
   preselectedCategory?: string;
   preselectedDate?: Date;
   preselectedTemplateId?: string;
-  onSave: (content: Omit<ContentItem, "id"> & { id?: string }, shortsPresetId?: string) => void;
+  onSave: (content: Omit<ContentItem, "id"> & { id?: string }, shortsPresetId?: string, linkedShortTemplateId?: string) => void;
   onDelete?: (id: string) => void;
   allContents: ContentItem[];
   templates?: ContentTemplate[];
@@ -247,7 +247,10 @@ export const ContentDialog = ({
         ? selectedPresetId 
         : undefined;
       
-      onSave(savedContent, shortsPresetToUse);
+      // Pass linked short template ID from the selected template (for video type)
+      const linkedShortTemplate = selectedTemplate?.linkedShortTemplateId;
+      
+      onSave(savedContent, shortsPresetToUse, linkedShortTemplate);
       onOpenChange(false);
     }
   };

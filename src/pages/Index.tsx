@@ -585,7 +585,8 @@ const Index = () => {
 
   const handleSaveContent = (
     content: Omit<ContentItem, "id"> & { id?: string },
-    shortsPresetId?: string
+    shortsPresetId?: string,
+    linkedShortTemplateId?: string
   ) => {
     pushUndo("save_content");
     if (content.id) {
@@ -652,6 +653,36 @@ const Index = () => {
       // Generate shorts if preset was selected
       if (shortsPresetId) {
         handleGenerateShorts(newContent, shortsPresetId);
+      }
+      
+      // Generate short from linked template (for video type with linked short template)
+      if (linkedShortTemplateId && content.contentType === "video") {
+        const shortTemplate = templates.find((t) => t.id === linkedShortTemplateId);
+        if (shortTemplate) {
+          const shortContent: ContentItem = {
+            id: `short-${Date.now()}`,
+            title: shortTemplate.titlePrefix 
+              ? `${shortTemplate.titlePrefix}${newContent.title}${shortTemplate.titleSuffix || ""}`
+              : newContent.title,
+            categoryId: shortTemplate.defaultCategoryId || newContent.categoryId,
+            date: addDays(newContent.date, 1), // Default: 1 day after parent
+            published: false,
+            contentType: "short",
+            parentId: newContent.id,
+            templateId: shortTemplate.id,
+            pipelineStageId: shortTemplate.defaultPipeline[0]?.id,
+            checklist: shortTemplate.defaultChecklist.map((item, idx) => ({
+              id: `check-${Date.now()}-${idx}`,
+              label: item.label,
+              isDone: false,
+              order: item.order,
+            })),
+          };
+          
+          setContents((prev) => [...prev, shortContent]);
+          syncContentCreate(shortContent);
+          toast.success("Short creato automaticamente dal template");
+        }
       }
     }
   };

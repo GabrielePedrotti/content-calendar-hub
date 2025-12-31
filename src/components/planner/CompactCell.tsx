@@ -1,13 +1,19 @@
 import { ContentItem, Category } from "@/types/planner";
 import { cn } from "@/lib/utils";
 import { useState, useRef, useEffect } from "react";
-import { Check, MoreVertical, Copy, Link2, Plus } from "lucide-react";
+import { Check, MoreVertical, Copy, Link2, Plus, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import {
   Tooltip,
   TooltipContent,
@@ -34,6 +40,7 @@ interface CompactCellProps {
   onDrop: () => void;
   onDuplicate: (content: ContentItem) => void;
   onTogglePublished: (content: ContentItem) => void;
+  onDelete: (content: ContentItem) => void;
   onQuickEdit: (content: ContentItem | undefined, newTitle: string) => void;
   onLinkHover: (contentId: string | null) => void;
   onLinkClick: (content: ContentItem) => void;
@@ -60,6 +67,7 @@ export const CompactCell = ({
   onDrop,
   onDuplicate,
   onTogglePublished,
+  onDelete,
   onQuickEdit,
   onLinkHover,
   onLinkClick,
@@ -235,6 +243,36 @@ export const CompactCell = ({
     return baseStyle;
   };
 
+  // Context menu for single content
+  const renderContextMenu = (content: ContentItem, children: React.ReactNode) => (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        {children}
+      </ContextMenuTrigger>
+      <ContextMenuContent>
+        <ContextMenuItem
+          onClick={() => onDuplicate(content)}
+        >
+          <Copy className="h-4 w-4 mr-2" />
+          Duplica
+        </ContextMenuItem>
+        <ContextMenuItem
+          onClick={() => onTogglePublished(content)}
+        >
+          <Check className="h-4 w-4 mr-2" />
+          {content.published ? "Segna non pubblicato" : "Segna pubblicato"}
+        </ContextMenuItem>
+        <ContextMenuItem
+          onClick={() => onDelete(content)}
+          className="text-destructive focus:text-destructive focus:bg-destructive/10"
+        >
+          <Trash2 className="h-4 w-4 mr-2" />
+          Elimina
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
+  );
+
   return (
     <div
       ref={cellRef}
@@ -267,189 +305,203 @@ export const CompactCell = ({
           +
         </span>
       ) : contents.length === 1 ? (
-        // Single content - centered display
-        <div className="flex items-center gap-1.5 w-full" data-content-id={contents[0].id}>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={(e) => handleTogglePublished(e, contents[0])}
-                  className="flex-shrink-0 hover:scale-110 transition-transform"
-                >
-                  {contents[0].published ? (
-                    <div className="h-3 w-3 rounded-full bg-green-500 flex items-center justify-center">
-                      <Check className="h-2 w-2 text-white" strokeWidth={3} />
-                    </div>
-                  ) : (
-                    <div className="h-3 w-3 rounded-full bg-muted border-2 border-muted-foreground/30" />
-                  )}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="text-xs">
-                  {contents[0].published ? "Pubblicato" : "Da fare"}
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span
-                  className={cn(
-                    "text-xs font-medium truncate flex-1 text-center",
-                    contents[0].published && "opacity-80"
-                  )}
-                  draggable
-                  onDragStart={(e) => onDragStart(contents[0], e.altKey)}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleClick(e, contents[0]);
-                  }}
-                >
-                  {contents[0].title}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="max-w-[300px]">{contents[0].title}</p>
-                {contents[0].notes && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {contents[0].notes}
-                  </p>
-                )}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          {contents[0].linkedContentId && (
+        // Single content - centered display with context menu
+        renderContextMenu(contents[0], 
+          <div className="flex items-center gap-1.5 w-full" data-content-id={contents[0].id}>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
-                    onMouseEnter={() => onLinkHover(contents[0].linkedContentId!)}
-                    onMouseLeave={() => onLinkHover(null)}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onLinkClick(contents[0]);
-                    }}
-                    className="flex-shrink-0"
+                    onClick={(e) => handleTogglePublished(e, contents[0])}
+                    className="flex-shrink-0 hover:scale-110 transition-transform"
                   >
-                    <Link2 className="h-3 w-3 text-primary" />
+                    {contents[0].published ? (
+                      <div className="h-3 w-3 rounded-full bg-green-500 flex items-center justify-center">
+                        <Check className="h-2 w-2 text-white" strokeWidth={3} />
+                      </div>
+                    ) : (
+                      <div className="h-3 w-3 rounded-full bg-muted border-2 border-muted-foreground/30" />
+                    )}
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  {(() => {
-                    const linked = getLinkedContent(contents[0].linkedContentId);
-                    const linkedCat = linked ? allCategories.find((cat) => cat.id === linked.categoryId) : null;
-                    return (
-                      <>
-                        <p className="text-xs font-semibold">Collegato a:</p>
-                        <p className="text-xs">
-                          {linkedCat?.name} – {linked?.title}
-                        </p>
-                      </>
-                    );
-                  })()}
+                  <p className="text-xs">
+                    {contents[0].published ? "Pubblicato" : "Da fare"}
+                  </p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-          )}
 
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                onClick={(e) => e.stopPropagation()}
-                className="h-5 w-5 hover:bg-background/50 rounded flex items-center justify-center"
-              >
-                <MoreVertical className="h-3 w-3" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDuplicate(contents[0]);
-                  }}
-                >
-                  <Copy className="h-4 w-4 mr-2" />
-                  Duplica
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onTogglePublished(contents[0]);
-                  }}
-                >
-                  <Check className="h-4 w-4 mr-2" />
-                  {contents[0].published ? "Segna non pubblicato" : "Segna pubblicato"}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      ) : contents.length === 2 ? (
-        // Two contents - show both normally
-        <div className="w-full space-y-1 overflow-hidden py-0.5">
-          {contents.map((content) => (
-            <TooltipProvider key={content.id}>
+            <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div
-                    data-content-id={content.id}
-                    className="flex items-center gap-1.5 text-[11px] hover:bg-background/30 px-1 py-0.5 rounded transition-colors cursor-pointer"
+                  <span
+                    className={cn(
+                      "text-xs font-medium truncate flex-1 text-center",
+                      contents[0].published && "opacity-80"
+                    )}
                     draggable
-                    onDragStart={(e) => {
-                      e.stopPropagation();
-                      onDragStart(content, e.altKey);
-                    }}
+                    onDragStart={(e) => onDragStart(contents[0], e.altKey)}
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleClick(e, content);
+                      handleClick(e, contents[0]);
                     }}
                   >
-                    <button
-                      onClick={(e) => handleTogglePublished(e, content)}
-                      className="flex-shrink-0 hover:scale-110 transition-transform"
-                    >
-                      {content.published ? (
-                        <div className="h-2.5 w-2.5 rounded-full bg-green-500 flex items-center justify-center">
-                          <Check className="h-1.5 w-1.5 text-white" strokeWidth={3} />
-                        </div>
-                      ) : (
-                        <div className="h-2.5 w-2.5 rounded-full bg-background border-2 border-muted-foreground/40" />
-                      )}
-                    </button>
-                    <span className={cn(
-                      "truncate flex-1 font-medium leading-tight",
-                      content.published && "opacity-75"
-                    )}>
-                      {content.title}
-                    </span>
-                    {content.linkedContentId && (
-                      <button
-                        onMouseEnter={() => onLinkHover(content.linkedContentId!)}
-                        onMouseLeave={() => onLinkHover(null)}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onLinkClick(content);
-                        }}
-                        className="flex-shrink-0 hover:scale-110 transition-transform"
-                      >
-                        <Link2 className="h-2.5 w-2.5 text-primary" />
-                      </button>
-                    )}
-                  </div>
+                    {contents[0].title}
+                  </span>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p className="max-w-[300px]">{content.title}</p>
-                  {content.notes && (
+                  <p className="max-w-[300px]">{contents[0].title}</p>
+                  {contents[0].notes && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      {content.notes}
+                      {contents[0].notes}
                     </p>
                   )}
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
+
+            {contents[0].linkedContentId && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onMouseEnter={() => onLinkHover(contents[0].linkedContentId!)}
+                      onMouseLeave={() => onLinkHover(null)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onLinkClick(contents[0]);
+                      }}
+                      className="flex-shrink-0"
+                    >
+                      <Link2 className="h-3 w-3 text-primary" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {(() => {
+                      const linked = getLinkedContent(contents[0].linkedContentId);
+                      const linkedCat = linked ? allCategories.find((cat) => cat.id === linked.categoryId) : null;
+                      return (
+                        <>
+                          <p className="text-xs font-semibold">Collegato a:</p>
+                          <p className="text-xs">
+                            {linkedCat?.name} – {linked?.title}
+                          </p>
+                        </>
+                      );
+                    })()}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  onClick={(e) => e.stopPropagation()}
+                  className="h-5 w-5 hover:bg-background/50 rounded flex items-center justify-center"
+                >
+                  <MoreVertical className="h-3 w-3" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDuplicate(contents[0]);
+                    }}
+                  >
+                    <Copy className="h-4 w-4 mr-2" />
+                    Duplica
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onTogglePublished(contents[0]);
+                    }}
+                  >
+                    <Check className="h-4 w-4 mr-2" />
+                    {contents[0].published ? "Segna non pubblicato" : "Segna pubblicato"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(contents[0]);
+                    }}
+                    className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Elimina
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        )
+      ) : contents.length === 2 ? (
+        // Two contents - show both normally with context menu
+        <div className="w-full space-y-1 overflow-hidden py-0.5">
+          {contents.map((content) => (
+            renderContextMenu(content,
+              <TooltipProvider key={content.id}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div
+                      data-content-id={content.id}
+                      className="flex items-center gap-1.5 text-[11px] hover:bg-background/30 px-1 py-0.5 rounded transition-colors cursor-pointer"
+                      draggable
+                      onDragStart={(e) => {
+                        e.stopPropagation();
+                        onDragStart(content, e.altKey);
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleClick(e, content);
+                      }}
+                    >
+                      <button
+                        onClick={(e) => handleTogglePublished(e, content)}
+                        className="flex-shrink-0 hover:scale-110 transition-transform"
+                      >
+                        {content.published ? (
+                          <div className="h-2.5 w-2.5 rounded-full bg-green-500 flex items-center justify-center">
+                            <Check className="h-1.5 w-1.5 text-white" strokeWidth={3} />
+                          </div>
+                        ) : (
+                          <div className="h-2.5 w-2.5 rounded-full bg-background border-2 border-muted-foreground/40" />
+                        )}
+                      </button>
+                      <span className={cn(
+                        "truncate flex-1 font-medium leading-tight",
+                        content.published && "opacity-75"
+                      )}>
+                        {content.title}
+                      </span>
+                      {content.linkedContentId && (
+                        <button
+                          onMouseEnter={() => onLinkHover(content.linkedContentId!)}
+                          onMouseLeave={() => onLinkHover(null)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onLinkClick(content);
+                          }}
+                          className="flex-shrink-0 hover:scale-110 transition-transform"
+                        >
+                          <Link2 className="h-2.5 w-2.5 text-primary" />
+                        </button>
+                      )}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="max-w-[300px]">{content.title}</p>
+                    {content.notes && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {content.notes}
+                      </p>
+                    )}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )
           ))}
         </div>
       ) : (
