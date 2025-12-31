@@ -36,6 +36,7 @@ import {
   Pencil,
   LayoutTemplate,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -73,6 +74,7 @@ export const TemplateManager = ({
   onDeleteTemplate,
 }: TemplateManagerProps) => {
   const [open, setOpen] = useState(false);
+  const [listOpen, setListOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<ContentTemplate | null>(null);
   const [formData, setFormData] = useState<Omit<ContentTemplate, "id">>(createDefaultTemplate());
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -152,11 +154,99 @@ export const TemplateManager = ({
 
   return (
     <>
-      <Button variant="outline" onClick={handleStartAdd} className="gap-2">
+      <Button variant="outline" onClick={() => setListOpen(true)} className="gap-2">
         <LayoutTemplate className="h-4 w-4" />
         Template
+        {templates.length > 0 && (
+          <Badge variant="secondary" className="ml-1">
+            {templates.length}
+          </Badge>
+        )}
       </Button>
 
+      {/* Template List Dialog */}
+      <Dialog open={listOpen} onOpenChange={setListOpen}>
+        <DialogContent className="sm:max-w-[600px] h-[70vh] flex flex-col overflow-hidden">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle className="flex items-center justify-between">
+              <span>Template</span>
+              <Button size="sm" onClick={handleStartAdd} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Nuovo Template
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-3 flex-1 overflow-y-auto">
+            {templates.length === 0 ? (
+              <div className="text-center py-8 space-y-2">
+                <p className="text-muted-foreground">
+                  Nessun template creato.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Crea un template per velocizzare la creazione dei contenuti.
+                </p>
+              </div>
+            ) : (
+              templates.map((template) => {
+                const category = categories.find(
+                  (c) => c.id === template.defaultCategoryId
+                );
+                return (
+                  <div
+                    key={template.id}
+                    className="flex items-center gap-3 p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex-1">
+                      <p className="font-medium">{template.name}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {CONTENT_TYPE_LABELS[template.contentType]} •{" "}
+                        {template.defaultChecklist.length} checklist items
+                        {category && (
+                          <>
+                            {" "}
+                            • Categoria:{" "}
+                            <span
+                              className="font-medium"
+                              style={{ color: `hsl(${category.color})` }}
+                            >
+                              {category.name}
+                            </span>
+                          </>
+                        )}
+                      </p>
+                    </div>
+
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleStartEdit(template)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDuplicate(template)}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDeleteClick(template.id)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add/Edit Template Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col overflow-hidden">
           <DialogHeader className="flex-shrink-0">
@@ -329,62 +419,6 @@ export const TemplateManager = ({
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Template List Dialog */}
-      {templates.length > 0 && (
-        <Dialog>
-          <Button variant="ghost" size="sm" className="gap-2" asChild>
-            <span onClick={() => {}}>
-              <FileText className="h-4 w-4" />
-              {templates.length} template
-            </span>
-          </Button>
-        </Dialog>
-      )}
-
-      {/* Inline template list in main dialog */}
-      {open && templates.length > 0 && (
-        <div className="border-t pt-4 mt-4">
-          <h4 className="font-semibold text-sm mb-3">Template Esistenti</h4>
-          <div className="space-y-2 max-h-[200px] overflow-y-auto">
-            {templates.map((template) => (
-              <div
-                key={template.id}
-                className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
-              >
-                <div className="flex-1">
-                  <p className="font-medium">{template.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {CONTENT_TYPE_LABELS[template.contentType]} •{" "}
-                    {template.defaultChecklist.length} checklist items
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleStartEdit(template)}
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleDuplicate(template)}
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleDeleteClick(template.id)}
-                >
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>

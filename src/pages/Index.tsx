@@ -569,7 +569,8 @@ const Index = () => {
   };
 
   const handleSaveContent = (
-    content: Omit<ContentItem, "id"> & { id?: string }
+    content: Omit<ContentItem, "id"> & { id?: string },
+    shortsPresetId?: string
   ) => {
     pushUndo("save_content");
     if (content.id) {
@@ -632,6 +633,11 @@ const Index = () => {
       }
       syncContentCreate(newContent);
       toast.success("Contenuto creato");
+      
+      // Generate shorts if preset was selected
+      if (shortsPresetId) {
+        handleGenerateShorts(newContent, shortsPresetId);
+      }
     }
   };
 
@@ -1239,7 +1245,6 @@ const Index = () => {
         allContents={contents}
         templates={templates}
         shortsPresets={shortsPresets}
-        onGenerateShorts={handleGenerateShorts}
       />
 
       <InfoDialog
