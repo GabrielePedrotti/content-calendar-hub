@@ -64,7 +64,7 @@ export const PlannerFilters = ({
   };
 
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 bg-transparent overflow-x-auto ml-auto">
+    <div className="flex items-center gap-2 px-3 py-1.5 bg-transparent overflow-visible ml-auto relative z-50">
       {/* Search */}
       <div className="relative flex items-center gap-1">
         {showSearch ? (
@@ -94,7 +94,7 @@ export const PlannerFilters = ({
               
               {/* Search Results Dropdown */}
               {searchQuery && (
-                <div className="absolute top-full left-0 w-72 mt-1 bg-popover border border-border rounded-md shadow-lg z-50 overflow-hidden">
+                <div className="absolute top-full left-0 w-72 mt-1 bg-popover border border-border rounded-md shadow-xl z-[100] overflow-hidden animate-in fade-in-0 zoom-in-95">
                   {searchResults.length === 0 ? (
                     <div className="p-3 text-xs text-muted-foreground text-center">
                       Nessun risultato trovato
