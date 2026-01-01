@@ -99,7 +99,10 @@ export const ContentDialog = ({
     ? allContents.find((c) => c.id === content.parentId)
     : undefined;
 
+  // Reset form when dialog opens
   useEffect(() => {
+    if (!open) return;
+    
     if (content) {
       setTitle(content.title);
       setCategoryId(content.categoryId);
@@ -114,7 +117,9 @@ export const ContentDialog = ({
       setSelectedTemplateId(content.templateId || "");
     } else {
       setTitle("");
-      setCategoryId(preselectedCategory || categories[0]?.id || "");
+      // Use preselectedCategory first, then fallback to first category
+      const initialCategory = preselectedCategory || categories[0]?.id || "";
+      setCategoryId(initialCategory);
       setDate(preselectedDate ? format(preselectedDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd"));
       setPublished(false);
       setNotes("");
@@ -130,6 +135,7 @@ export const ContentDialog = ({
         if (template) {
           setSelectedTemplateId(preselectedTemplateId);
           setContentType(template.contentType);
+          // Template category overrides preselected category only if template has one
           if (template.defaultCategoryId) {
             setCategoryId(template.defaultCategoryId);
           }
@@ -156,7 +162,8 @@ export const ContentDialog = ({
         setSelectedTemplateId("");
       }
     }
-  }, [content, preselectedCategory, preselectedDate, preselectedTemplateId, categories, templates, open]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   // Apply template when selected
   const handleTemplateChange = (templateId: string) => {
