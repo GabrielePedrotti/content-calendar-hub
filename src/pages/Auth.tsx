@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Calendar, Sparkles } from 'lucide-react';
+import { Loader2, Calendar, Download } from 'lucide-react';
 
 interface AuthPageProps {
   onLogin: (email: string, password: string) => void;
@@ -23,14 +23,14 @@ export default function Auth({ onLogin, isLoading = false, error = null }: AuthP
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col overflow-y-auto">
       {/* Background decoration */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl" />
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl" />
       </div>
 
-      <main className="flex-1 flex items-center justify-center p-4 relative z-10">
+      <main className="flex-1 flex items-center justify-center p-4 relative z-10 min-h-0">
         <div className="w-full max-w-md space-y-8">
           {/* Logo and title */}
           <div className="text-center">
@@ -125,8 +125,12 @@ export default function Auth({ onLogin, isLoading = false, error = null }: AuthP
       </main>
 
       {/* Footer */}
-      <footer className="py-4 text-center text-xs text-muted-foreground relative z-10">
-        <p>Planner Editoriale per Content Creator</p>
+      <footer className="py-4 text-center relative z-10 space-y-2">
+        <Link to="/install" className="inline-flex items-center gap-2 text-sm text-primary hover:underline">
+          <Download className="h-4 w-4" />
+          Installa App
+        </Link>
+        <p className="text-xs text-muted-foreground">Planner Editoriale per Content Creator</p>
       </footer>
     </div>
   );
