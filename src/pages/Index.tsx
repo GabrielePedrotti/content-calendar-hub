@@ -1051,7 +1051,7 @@ const Index = () => {
         />
 
       <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "planner" | "task" | "tasklist")} className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex items-center border-b border-grid-border bg-background sticky top-0 z-10">
+        <div className="flex items-center border-b border-grid-border bg-background sticky top-0 z-50">
           <TabsList className="justify-start rounded-none h-auto p-0 bg-transparent border-0">
             <TabsTrigger value="planner" className="gap-2 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
               <Calendar className="h-4 w-4" />
