@@ -58,6 +58,11 @@ All colors MUST be HSL.
     --vacation-accent: 270 60% 35%;
     --vacation-foreground: 270 90% 90%;
     --vacation-badge: 270 60% 25%;
+
+    /* Cross-month indicator */
+    --month-badge-bg: 220 15% 25%;
+    --month-badge-text: 210 20% 75%;
+    --month-divider: 210 100% 50% / 0.4;
   }
 }
 
