@@ -1,11 +1,11 @@
-import { Download, Smartphone, Wifi, Zap, Share, Check, ArrowLeft } from 'lucide-react';
+import { Download, Smartphone, Wifi, Zap, Share, Check, ArrowLeft, MoreVertical, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { usePWA } from '@/hooks/usePWA';
 import { Link } from 'react-router-dom';
 
 export default function Install() {
-  const { isInstallable, isInstalled, isIOS, installApp } = usePWA();
+  const { isInstallable, isInstalled, isIOS, isSafari, isChromium, browser, isPreviewEnv, hasPrompt, installApp } = usePWA();
 
   const features = [
     {
@@ -24,6 +24,156 @@ export default function Install() {
       description: "Interfaccia a schermo intero come un'app nativa"
     }
   ];
+
+  const browserName = {
+    'chrome': 'Chrome',
+    'brave': 'Brave',
+    'edge': 'Edge',
+    'firefox': 'Firefox',
+    'safari': 'Safari',
+    'ios-safari': 'Safari',
+    'other': 'questo browser'
+  }[browser];
+
+  const renderInstallInstructions = () => {
+    if (isInstalled) {
+      return (
+        <Card className="mb-6 border-primary/50 bg-primary/5">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 bg-primary/20 rounded-full">
+              <Check className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <p className="font-medium text-foreground">App Installata!</p>
+              <p className="text-sm text-muted-foreground">
+                Puoi trovare l'app nella home del tuo dispositivo
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    if (isIOS) {
+      return (
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <h3 className="font-medium text-foreground mb-3">Come installare su iPhone/iPad</h3>
+            <ol className="space-y-3 text-sm">
+              <li className="flex items-start gap-3">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center font-medium">1</span>
+                <span className="text-muted-foreground">
+                  Tocca l'icona <Share className="inline h-4 w-4 mx-1" /> Condividi nella barra di Safari
+                </span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center font-medium">2</span>
+                <span className="text-muted-foreground">
+                  Scorri e tocca "Aggiungi a Home"
+                </span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center font-medium">3</span>
+                <span className="text-muted-foreground">
+                  Tocca "Aggiungi" in alto a destra
+                </span>
+              </li>
+            </ol>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    if (isChromium) {
+      return (
+        <>
+          {hasPrompt ? (
+            <Button onClick={installApp} size="lg" className="w-full mb-6">
+              <Download className="h-5 w-5 mr-2" />
+              Installa App
+            </Button>
+          ) : (
+            <Card className="mb-6">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Globe className="h-5 w-5 text-primary" />
+                  <h3 className="font-medium text-foreground">Installazione su {browserName}</h3>
+                </div>
+                
+                {isPreviewEnv && (
+                  <div className="bg-muted/50 rounded-md p-3 mb-4 text-xs text-muted-foreground">
+                    <strong>Nota:</strong> Stai visualizzando l'app in modalità anteprima. 
+                    Per l'installazione automatica, pubblica l'app e aprila dal dominio finale.
+                  </div>
+                )}
+
+                <p className="text-sm text-muted-foreground mb-3">
+                  Puoi installare l'app manualmente dal menu del browser:
+                </p>
+                <ol className="space-y-3 text-sm">
+                  <li className="flex items-start gap-3">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center font-medium">1</span>
+                    <span className="text-muted-foreground">
+                      Clicca sul menu <MoreVertical className="inline h-4 w-4 mx-1" /> in alto a destra
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center font-medium">2</span>
+                    <span className="text-muted-foreground">
+                      Cerca "Installa app" o "Installa Planner Editoriale"
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center font-medium">3</span>
+                    <span className="text-muted-foreground">
+                      Conferma l'installazione
+                    </span>
+                  </li>
+                </ol>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      );
+    }
+
+    if (isSafari) {
+      return (
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <h3 className="font-medium text-foreground mb-3">Come installare su Safari (Mac)</h3>
+            <ol className="space-y-3 text-sm">
+              <li className="flex items-start gap-3">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center font-medium">1</span>
+                <span className="text-muted-foreground">
+                  Vai su File → Aggiungi al Dock
+                </span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center font-medium">2</span>
+                <span className="text-muted-foreground">
+                  Conferma l'aggiunta
+                </span>
+              </li>
+            </ol>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    // Firefox or other browsers
+    return (
+      <Card className="mb-6 border-muted">
+        <CardContent className="p-4 text-center">
+          <p className="text-sm text-muted-foreground">
+            {browser === 'firefox' 
+              ? "Firefox non supporta l'installazione PWA nativa. Prova Chrome, Edge o Brave per un'esperienza migliore."
+              : "Per installare l'app, usa Chrome, Edge, Brave o Safari."}
+          </p>
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -51,64 +201,13 @@ export default function Install() {
           <p className="text-muted-foreground">
             Installa l'app per un'esperienza migliore
           </p>
+          <p className="text-xs text-muted-foreground/70 mt-1">
+            Browser rilevato: {browserName}
+          </p>
         </div>
 
-        {/* Status Card */}
-        {isInstalled ? (
-          <Card className="mb-6 border-primary/50 bg-primary/5">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 bg-primary/20 rounded-full">
-                <Check className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="font-medium text-foreground">App Installata!</p>
-                <p className="text-sm text-muted-foreground">
-                  Puoi trovare l'app nella home del tuo dispositivo
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        ) : isIOS ? (
-          <Card className="mb-6">
-            <CardContent className="p-4">
-              <h3 className="font-medium text-foreground mb-3">Come installare su iPhone/iPad</h3>
-              <ol className="space-y-3 text-sm">
-                <li className="flex items-start gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center font-medium">1</span>
-                  <span className="text-muted-foreground">
-                    Tocca l'icona <Share className="inline h-4 w-4 mx-1" /> Condividi nella barra di Safari
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center font-medium">2</span>
-                  <span className="text-muted-foreground">
-                    Scorri e tocca "Aggiungi a Home"
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center font-medium">3</span>
-                  <span className="text-muted-foreground">
-                    Tocca "Aggiungi" in alto a destra
-                  </span>
-                </li>
-              </ol>
-            </CardContent>
-          </Card>
-        ) : isInstallable ? (
-          <Button onClick={installApp} size="lg" className="w-full mb-6">
-            <Download className="h-5 w-5 mr-2" />
-            Installa App
-          </Button>
-        ) : (
-          <Card className="mb-6 border-muted">
-            <CardContent className="p-4 text-center">
-              <p className="text-sm text-muted-foreground">
-                L'installazione non è disponibile in questo browser. 
-                Prova ad aprire questa pagina in Chrome, Edge o Safari.
-              </p>
-            </CardContent>
-          </Card>
-        )}
+        {/* Install Instructions */}
+        {renderInstallInstructions()}
 
         {/* Features */}
         <div className="space-y-3">
