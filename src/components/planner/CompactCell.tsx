@@ -13,9 +13,6 @@ import {
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
-  ContextMenuSub,
-  ContextMenuSubContent,
-  ContextMenuSubTrigger,
 } from "@/components/ui/context-menu";
 import {
   Tooltip,
@@ -278,12 +275,12 @@ export const CompactCell = ({
     </ContextMenu>
   );
 
-  // Get templates for this category
+  // Get templates for this category only
   const categoryTemplates = templates.filter(
-    (t) => t.defaultCategoryId === category.id || !t.defaultCategoryId
+    (t) => t.defaultCategoryId === category.id
   );
 
-  // Empty cell context menu
+  // Empty cell context menu - show templates directly without submenu
   const renderEmptyCellContextMenu = (children: React.ReactNode) => (
     <ContextMenu>
       <ContextMenuTrigger asChild>
@@ -294,24 +291,15 @@ export const CompactCell = ({
           <Plus className="h-4 w-4 mr-2" />
           Nuovo contenuto
         </ContextMenuItem>
-        {categoryTemplates.length > 0 && (
-          <ContextMenuSub>
-            <ContextMenuSubTrigger>
-              <LayoutTemplate className="h-4 w-4 mr-2" />
-              Usa template
-            </ContextMenuSubTrigger>
-            <ContextMenuSubContent>
-              {categoryTemplates.map((template) => (
-                <ContextMenuItem
-                  key={template.id}
-                  onClick={() => onEdit(undefined, template.id)}
-                >
-                  {template.name}
-                </ContextMenuItem>
-              ))}
-            </ContextMenuSubContent>
-          </ContextMenuSub>
-        )}
+        {categoryTemplates.map((template) => (
+          <ContextMenuItem
+            key={template.id}
+            onClick={() => onEdit(undefined, template.id)}
+          >
+            <LayoutTemplate className="h-4 w-4 mr-2" />
+            {template.name}
+          </ContextMenuItem>
+        ))}
       </ContextMenuContent>
     </ContextMenu>
   );

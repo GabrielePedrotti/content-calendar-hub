@@ -69,6 +69,8 @@ const createDefaultTemplate = (): Omit<ContentTemplate, "id"> => ({
   frequencyPattern: 'none',
   frequencyCustomDays: [],
   frequencyCount: 1,
+  shortsCount: 1,
+  shortsDayOffset: 1,
 });
 
 export const TemplateManager = ({
@@ -107,6 +109,8 @@ export const TemplateManager = ({
       frequencyPattern: template.frequencyPattern || 'none',
       frequencyCustomDays: template.frequencyCustomDays || [],
       frequencyCount: template.frequencyCount || 1,
+      shortsCount: template.shortsCount || 1,
+      shortsDayOffset: template.shortsDayOffset || 1,
     });
     setOpen(true);
   };
@@ -394,36 +398,73 @@ export const TemplateManager = ({
 
               {/* Linked Short Template - only for video type */}
               {formData.contentType === "video" && (
-                <div className="space-y-2 p-3 rounded-lg border border-primary/20 bg-primary/5">
+                <div className="space-y-4 p-3 rounded-lg border border-primary/20 bg-primary/5">
                   <Label className="flex items-center gap-2">
                     <Clapperboard className="h-4 w-4 text-primary" />
-                    Template Short Collegato
+                    Generazione Shorts Automatica
                   </Label>
-                  <Select
-                    value={formData.linkedShortTemplateId || "none"}
-                    onValueChange={(v) =>
-                      setFormData({
-                        ...formData,
-                        linkedShortTemplateId: v === "none" ? undefined : v,
-                      })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Nessuno" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Nessuno</SelectItem>
-                      {templates
-                        .filter((t) => t.contentType === "short" && t.id !== editingTemplate?.id)
-                        .map((t) => (
-                          <SelectItem key={t.id} value={t.id}>
-                            {t.name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Template Short da usare</Label>
+                    <Select
+                      value={formData.linkedShortTemplateId || "none"}
+                      onValueChange={(v) =>
+                        setFormData({
+                          ...formData,
+                          linkedShortTemplateId: v === "none" ? undefined : v,
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Nessuno" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Nessuno</SelectItem>
+                        {templates
+                          .filter((t) => t.contentType === "short" && t.id !== editingTemplate?.id)
+                          .map((t) => (
+                            <SelectItem key={t.id} value={t.id}>
+                              {t.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {formData.linkedShortTemplateId && formData.linkedShortTemplateId !== "none" && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-xs">Quanti shorts creare</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={10}
+                          value={formData.shortsCount || 1}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              shortsCount: parseInt(e.target.value) || 1,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">Giorni dopo il video</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={30}
+                          value={formData.shortsDayOffset || 1}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              shortsDayOffset: parseInt(e.target.value) || 1,
+                            })
+                          }
+                        />
+                      </div>
+                    </div>
+                  )}
                   <p className="text-xs text-muted-foreground">
-                    Quando crei un video con questo template, lo short verrà configurato automaticamente con il template selezionato.
+                    Quando crei un video con questo template, gli shorts verranno creati automaticamente.
                   </p>
                 </div>
               )}
