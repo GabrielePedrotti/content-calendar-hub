@@ -58,7 +58,7 @@ export const PlannerHeader = ({
         <h1 className="text-lg font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
           Planner
         </h1>
-        
+
         <Tooltip>
           <TooltipTrigger asChild>
             <div className="flex items-center gap-1.5 bg-muted/30 px-2 py-1 rounded-md border border-border">
@@ -73,7 +73,7 @@ export const PlannerHeader = ({
           </TooltipTrigger>
           <TooltipContent>Modalità Endless</TooltipContent>
         </Tooltip>
-        
+
         <div className="flex items-center gap-0.5">
           <Button
             variant="ghost"
@@ -97,9 +97,9 @@ export const PlannerHeader = ({
             <ChevronRight className="h-3.5 w-3.5" />
           </Button>
         </div>
-        
+
         <div className="w-px h-5 bg-border" />
-        
+
         {/* Management buttons in dropdown */}
         {managementButtons && (
           <DropdownMenu>
@@ -115,7 +115,7 @@ export const PlannerHeader = ({
           </DropdownMenu>
         )}
       </div>
-      
+
       <div className="flex items-center gap-1.5">
         {/* Connection status - compact */}
         <Tooltip>
@@ -138,23 +138,18 @@ export const PlannerHeader = ({
             {pendingEventsCount && pendingEventsCount > 0 && ` (${pendingEventsCount} in coda)`}
           </TooltipContent>
         </Tooltip>
-        
+
         {onInfoClick && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onInfoClick}
-                className="h-7 w-7"
-              >
+              <Button variant="ghost" size="icon" onClick={onInfoClick} className="h-7 w-7">
                 <Info className="h-3.5 w-3.5" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Scorciatoie</TooltipContent>
+            <TooltipContent className="z-[9999]">Scorciatoie</TooltipContent>
           </Tooltip>
         )}
-        
+
         <Popover>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -201,7 +196,7 @@ export const PlannerHeader = ({
                   </div>
                 </div>
               </div>
-              
+
               {endlessMode && onEndlessWeeksBeforeChange !== undefined && endlessWeeksBefore !== undefined && (
                 <div className="space-y-2 border-t pt-3">
                   <h4 className="font-medium text-xs">Settimane Passate (Endless)</h4>
@@ -222,23 +217,18 @@ export const PlannerHeader = ({
             </div>
           </PopoverContent>
         </Popover>
-        
+
         <BlackjackGame />
-        
+
         <Button onClick={onAddContent} size="sm" className="gap-1 h-7 text-xs">
           <Plus className="h-3 w-3" />
           Nuovo
         </Button>
-        
+
         {user && onLogout && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onLogout}
-                className="h-7 w-7 text-muted-foreground"
-              >
+              <Button variant="ghost" size="icon" onClick={onLogout} className="h-7 w-7 text-muted-foreground">
                 <LogOut className="h-3.5 w-3.5" />
               </Button>
             </TooltipTrigger>
