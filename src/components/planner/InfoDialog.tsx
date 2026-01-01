@@ -36,6 +36,10 @@ export const InfoDialog = ({ open, onOpenChange }: InfoDialogProps) => {
                 { shortcut: "Shift/Ctrl/Alt + Click", desc: "Apri popup dettagli completo" },
                 { shortcut: "Invio", desc: "Salva modifica inline" },
                 { shortcut: "Esc", desc: "Annulla modifica" },
+                { shortcut: "N", desc: "Nuovo contenuto (usa categoria/data sotto il mouse)" },
+                { shortcut: "C", desc: "Elimina il contenuto sotto il mouse" },
+                { shortcut: "1 + Click", desc: "Crea contenuto con template primario" },
+                { shortcut: "2 + Click", desc: "Crea contenuto con template secondario" },
               ]}
             />
 
