@@ -4,7 +4,6 @@ import { CompactWeekGrid } from "@/components/planner/CompactWeekGrid";
 import { MonthSeparator } from "@/components/planner/MonthSeparator";
 import { ContentDialog } from "@/components/planner/ContentDialog";
 import { CategoryManager } from "@/components/planner/CategoryManager";
-// SeriesCreator removed - functionality merged into SeriesManager
 import { PlannerFilters } from "@/components/planner/PlannerFilters";
 import { InfoDialog } from "@/components/planner/InfoDialog";
 import { VacationManager } from "@/components/planner/VacationManager";
@@ -13,8 +12,7 @@ import { TaskListView } from "@/components/planner/TaskListView";
 import { KanbanView } from "@/components/planner/KanbanView";
 import { TemplateManager } from "@/components/planner/TemplateManager";
 import { SeriesManager } from "@/components/planner/SeriesManager";
-// ShortsPresetManager removed - functionality merged into SeriesManager
-import { LoginDialog } from "@/components/auth/LoginDialog";
+import Auth from "@/pages/Auth";
 import { WebSocketSettings, getStoredWsUrl } from "@/components/settings/WebSocketSettings";
 import { Category, CategoryFeatures, DEFAULT_CATEGORY_FEATURES, ContentItem, WeekDay, VacationPeriod, ContentTemplate, Series } from "@/types/planner";
 import { User } from "@/types/auth";
@@ -1001,14 +999,19 @@ const Index = () => {
     }
   };
 
-  return (
-    <>
-      <LoginDialog 
-        open={!user} 
+  // Show auth page if not logged in
+  if (!user) {
+    return (
+      <Auth 
         onLogin={handleLogin} 
         isLoading={isAuthenticating}
         error={authError}
       />
+    );
+  }
+
+  return (
+    <>
       
       <div className="h-screen bg-background text-foreground flex flex-col overflow-hidden">
         <PlannerHeader
