@@ -143,6 +143,12 @@ const Index = () => {
     if (data.contents) setContents(data.contents.map(parseContentDate));
     if (data.categories && data.categories.length > 0) setCategories(data.categories);
     if (data.vacations) setVacations(data.vacations.map(parseVacationDates));
+    if (data.templates) setTemplates(data.templates);
+    if (data.series) setSeriesList(data.series.map((s: any) => ({
+      ...s,
+      startDate: new Date(s.startDate),
+      endDate: s.endDate ? new Date(s.endDate) : undefined,
+    })));
     toast.success("Dati sincronizzati");
   }, []);
 
@@ -175,6 +181,36 @@ const Index = () => {
     }
   }, []);
 
+  const handleTemplateChange = useCallback((type: 'created' | 'updated' | 'deleted', payload: ContentTemplate | { id: string }) => {
+    if (type === 'created') {
+      setTemplates(prev => [...prev, payload as ContentTemplate]);
+    } else if (type === 'updated') {
+      setTemplates(prev => prev.map(t => t.id === (payload as ContentTemplate).id ? payload as ContentTemplate : t));
+    } else if (type === 'deleted') {
+      setTemplates(prev => prev.filter(t => t.id !== (payload as { id: string }).id));
+    }
+  }, []);
+
+  const handleSeriesChange = useCallback((type: 'created' | 'updated' | 'deleted', payload: Series | { id: string }) => {
+    if (type === 'created') {
+      const s = payload as any;
+      setSeriesList(prev => [...prev, {
+        ...s,
+        startDate: new Date(s.startDate),
+        endDate: s.endDate ? new Date(s.endDate) : undefined,
+      }]);
+    } else if (type === 'updated') {
+      const s = payload as any;
+      setSeriesList(prev => prev.map(series => series.id === s.id ? {
+        ...s,
+        startDate: new Date(s.startDate),
+        endDate: s.endDate ? new Date(s.endDate) : undefined,
+      } : series));
+    } else if (type === 'deleted') {
+      setSeriesList(prev => prev.filter(s => s.id !== (payload as { id: string }).id));
+    }
+  }, []);
+
   const handleWsError = useCallback((error: string) => {
     toast.error(error);
   }, []);
@@ -195,6 +231,12 @@ const Index = () => {
     syncCategoryDelete,
     syncVacationCreate,
     syncVacationDelete,
+    syncTemplateCreate,
+    syncTemplateUpdate,
+    syncTemplateDelete,
+    syncSeriesCreate,
+    syncSeriesUpdate,
+    syncSeriesDelete,
     saveToLocalCache,
     loadFromLocalCache,
   } = useWebSocket({
@@ -205,6 +247,8 @@ const Index = () => {
     onContentChange: handleContentChange,
     onCategoryChange: handleCategoryChange,
     onVacationChange: handleVacationChange,
+    onTemplateChange: handleTemplateChange,
+    onSeriesChange: handleSeriesChange,
     onError: handleWsError,
   });
 
@@ -335,6 +379,12 @@ const Index = () => {
     if (cachedData.contents.length > 0) setContents(cachedData.contents.map(parseContentDate));
     if (cachedData.categories.length > 0) setCategories(cachedData.categories);
     if (cachedData.vacations.length > 0) setVacations(cachedData.vacations.map(parseVacationDates));
+    if (cachedData.templates && cachedData.templates.length > 0) setTemplates(cachedData.templates);
+    if (cachedData.series && cachedData.series.length > 0) setSeriesList(cachedData.series.map((s: any) => ({
+      ...s,
+      startDate: new Date(s.startDate),
+      endDate: s.endDate ? new Date(s.endDate) : undefined,
+    })));
   }, [loadFromLocalCache]);
 
   // Track if "1" key is pressed for primary template mode (force popup open)
@@ -400,8 +450,8 @@ const Index = () => {
 
   // Save data to cache when it changes
   useEffect(() => {
-    saveToLocalCache({ contents, categories, vacations });
-  }, [contents, categories, vacations, saveToLocalCache]);
+    saveToLocalCache({ contents, categories, vacations, templates, series: seriesList });
+  }, [contents, categories, vacations, templates, seriesList, saveToLocalCache]);
 
   const weeks = useMemo(() => {
     if (endlessMode) {
@@ -760,32 +810,38 @@ const Index = () => {
   // Template handlers
   const handleAddTemplate = (template: ContentTemplate) => {
     setTemplates((prev) => [...prev, template]);
+    syncTemplateCreate(template);
     toast.success(`Template "${template.name}" creato`);
   };
 
   const handleUpdateTemplate = (template: ContentTemplate) => {
     setTemplates((prev) => prev.map((t) => (t.id === template.id ? template : t)));
+    syncTemplateUpdate(template);
     toast.success("Template aggiornato");
   };
 
   const handleDeleteTemplate = (id: string) => {
     setTemplates((prev) => prev.filter((t) => t.id !== id));
+    syncTemplateDelete(id);
     toast.success("Template eliminato");
   };
 
   // Series handlers
   const handleAddSeries = (series: Series) => {
     setSeriesList((prev) => [...prev, series]);
+    syncSeriesCreate(series);
     toast.success(`Serie "${series.name}" creata`);
   };
 
   const handleUpdateSeries = (series: Series) => {
     setSeriesList((prev) => prev.map((s) => (s.id === series.id ? series : s)));
+    syncSeriesUpdate(series);
     toast.success("Serie aggiornata");
   };
 
   const handleDeleteSeries = (id: string) => {
     setSeriesList((prev) => prev.filter((s) => s.id !== id));
+    syncSeriesDelete(id);
     toast.success("Serie eliminata");
   };
 
@@ -817,11 +873,13 @@ const Index = () => {
       })),
     };
     
+    const updatedSeries: Series = { ...series, currentNumber: series.currentNumber + 1 };
     setContents((prev) => [...prev, newContent]);
     setSeriesList((prev) => 
-      prev.map((s) => s.id === seriesId ? { ...s, currentNumber: s.currentNumber + 1 } : s)
+      prev.map((s) => s.id === seriesId ? updatedSeries : s)
     );
     syncContentCreate(newContent);
+    syncSeriesUpdate(updatedSeries);
     toast.success(`Generato: ${title}`);
   };
 

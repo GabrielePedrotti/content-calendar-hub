@@ -1,4 +1,4 @@
-import { Category, ContentItem, VacationPeriod } from './planner';
+import { Category, ContentItem, VacationPeriod, ContentTemplate, Series } from './planner';
 import { User } from './auth';
 
 // Eventi che il client invia al server
@@ -13,7 +13,13 @@ export type ClientEventType =
   | 'category:update'
   | 'category:delete'
   | 'vacation:create'
-  | 'vacation:delete';
+  | 'vacation:delete'
+  | 'template:create'
+  | 'template:update'
+  | 'template:delete'
+  | 'series:create'
+  | 'series:update'
+  | 'series:delete';
 
 // Eventi che il server invia al client
 export type ServerEventType = 
@@ -28,6 +34,12 @@ export type ServerEventType =
   | 'category:deleted'
   | 'vacation:created'
   | 'vacation:deleted'
+  | 'template:created'
+  | 'template:updated'
+  | 'template:deleted'
+  | 'series:created'
+  | 'series:updated'
+  | 'series:deleted'
   | 'error';
 
 export interface ClientEvent {
@@ -60,6 +72,8 @@ export interface InitialDataPayload {
   contents: ContentItem[];
   categories: Category[];
   vacations: VacationPeriod[];
+  templates: ContentTemplate[];
+  series: Series[];
 }
 
 export interface SyncState {
