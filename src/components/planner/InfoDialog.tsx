@@ -17,7 +17,7 @@ interface InfoDialogProps {
 export const InfoDialog = ({ open, onOpenChange }: InfoDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] flex flex-col p-0 gap-0">
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 py-4 border-b bg-muted/30 shrink-0">
           <DialogTitle className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-primary/10">
