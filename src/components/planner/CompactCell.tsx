@@ -55,6 +55,7 @@ interface CompactCellProps {
   templates?: { id: string; name: string; defaultCategoryId?: string }[];
   onCategoryHover?: (categoryId: string | null) => void;
   onDateHover?: (date: Date | null) => void;
+  onContentHover?: (contentId: string | null) => void;
   cellDate?: Date;
 }
 
@@ -86,6 +87,7 @@ export const CompactCell = ({
   templates = [],
   onCategoryHover,
   onDateHover,
+  onContentHover,
   cellDate,
 }: CompactCellProps) => {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
@@ -364,7 +366,12 @@ export const CompactCell = ({
       ) : contents.length === 1 ? (
         // Single content - centered display with context menu
         renderContextMenu(contents[0], 
-          <div className="flex items-center gap-1.5 w-full" data-content-id={contents[0].id}>
+          <div 
+            className="flex items-center gap-1.5 w-full" 
+            data-content-id={contents[0].id}
+            onMouseEnter={() => onContentHover?.(contents[0].id)}
+            onMouseLeave={() => onContentHover?.(null)}
+          >
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -513,6 +520,8 @@ export const CompactCell = ({
                       e.stopPropagation();
                       handleClick(e, content);
                     }}
+                    onMouseEnter={() => onContentHover?.(content.id)}
+                    onMouseLeave={() => onContentHover?.(null)}
                   >
                     <button
                       onClick={(e) => handleTogglePublished(e, content)}
@@ -605,6 +614,8 @@ export const CompactCell = ({
                       e.stopPropagation();
                       handleClick(e, contents[0]);
                     }}
+                    onMouseEnter={() => onContentHover?.(contents[0].id)}
+                    onMouseLeave={() => onContentHover?.(null)}
                   >
                     <button
                       onClick={(e) => handleTogglePublished(e, contents[0])}
@@ -691,6 +702,8 @@ export const CompactCell = ({
                         setPopoverOpen(false);
                         handleClick(e, content);
                       }}
+                      onMouseEnter={() => onContentHover?.(content.id)}
+                      onMouseLeave={() => onContentHover?.(null)}
                     >
                       <button
                         onClick={(e) => {

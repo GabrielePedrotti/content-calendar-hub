@@ -34,6 +34,7 @@ interface CompactWeekGridProps {
   templates?: { id: string; name: string; defaultCategoryId?: string }[];
   onCategoryHover?: (categoryId: string | null) => void;
   onDateHover?: (date: Date | null) => void;
+  onContentHover?: (contentId: string | null) => void;
 }
 
 export const CompactWeekGrid = ({
@@ -64,6 +65,7 @@ export const CompactWeekGrid = ({
   templates = [],
   onCategoryHover,
   onDateHover,
+  onContentHover,
 }: CompactWeekGridProps) => {
   const [dayDialogOpen, setDayDialogOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
@@ -255,6 +257,7 @@ export const CompactWeekGrid = ({
                         templates={templates}
                         onCategoryHover={onCategoryHover}
                         onDateHover={onDateHover}
+                        onContentHover={onContentHover}
                         cellDate={day.date}
                       />
                     );

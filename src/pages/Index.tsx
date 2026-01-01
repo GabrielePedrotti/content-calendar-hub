@@ -341,7 +341,10 @@ const Index = () => {
   // Track if "1" key is pressed for primary template mode (force popup open)
   const [isPrimaryTemplateMode, setIsPrimaryTemplateMode] = useState(false);
 
-  // Keyboard shortcuts for "N" (new content), "1" (primary template mode), and "2" (secondary template mode)
+  // Track hovered content for "C" delete shortcut
+  const [hoveredContentId, setHoveredContentId] = useState<string | null>(null);
+
+  // Keyboard shortcuts for "N" (new content), "C" (delete hovered content), "1" (primary template mode), and "2" (secondary template mode)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ignore if typing in an input
@@ -359,6 +362,12 @@ const Index = () => {
         } else {
           handleAddContent();
         }
+      }
+      
+      // "C" deletes the hovered content
+      if ((e.key === "c" || e.key === "C") && hoveredContentId) {
+        e.preventDefault();
+        handleDeleteContent(hoveredContentId);
       }
       
       // "1" enables primary template mode (opens popup on cell click)
@@ -388,7 +397,7 @@ const Index = () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [hoveredCategoryId, hoveredDate]);
+  }, [hoveredCategoryId, hoveredDate, hoveredContentId, contents]);
 
   // Save data to cache when it changes
   useEffect(() => {
@@ -401,47 +410,41 @@ const Index = () => {
       const allWeeks: { weekNumber: number; days: WeekDay[]; monthYear: string; monthLabelDate: Date }[] = [];
       let weekCounter = 1;
 
-      // Use endlessWeeksBefore directly as the number of weeks to go back (not months)
-      const weeksBackMonths = endlessWeeksBefore > 0 ? Math.max(1, Math.floor(endlessWeeksBefore / 4)) : 0;
+      // Calculate the start date based on weeks before
+      const startDate = endlessWeeksBefore > 0 
+        ? startOfWeek(addWeeks(currentDate, -endlessWeeksBefore), { locale: it, weekStartsOn: 1 })
+        : startOfMonth(currentDate);
+      
+      // Calculate end date (monthsToShow months ahead)
+      const endDate = endOfMonth(addMonths(currentDate, monthsToShow - 1));
 
-      for (let i = -weeksBackMonths; i < monthsToShow; i++) {
-        const targetDate = addMonths(currentDate, i);
-        const monthStart = startOfMonth(targetDate);
-        const monthEnd = endOfMonth(targetDate);
+      const allWeeksInInterval = eachWeekOfInterval(
+        { start: startDate, end: endDate },
+        { locale: it, weekStartsOn: 1 }
+      );
 
-        const weeksInMonth = eachWeekOfInterval(
-          {
-            start: monthStart,
-            end: monthEnd,
-          },
-          { locale: it, weekStartsOn: 1 }
-        );
+      allWeeksInInterval.forEach((weekStart) => {
+        const weekEnd = endOfWeek(weekStart, { locale: it, weekStartsOn: 1 });
+        const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
-        weeksInMonth.forEach((weekStart) => {
-          const weekEnd = endOfWeek(weekStart, { locale: it, weekStartsOn: 1 });
-          const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
+        const weekDays: WeekDay[] = days.map((day) => ({
+          date: day,
+          dayName: day.toLocaleDateString("it-IT", { weekday: "long" }),
+          dayNumber: day.getDate(),
+          isSunday: isSunday(day),
+        }));
 
-          const weekDays: WeekDay[] = days.map((day) => ({
-            date: day,
-            dayName: day.toLocaleDateString("it-IT", { weekday: "long" }),
-            dayNumber: day.getDate(),
-            isSunday: isSunday(day),
-          }));
+        // Determine which month this week belongs to (use the middle of the week)
+        const middleDay = days[3]; // Thursday is the middle
+        const monthYear = `${middleDay.getMonth()}-${middleDay.getFullYear()}`;
 
-          const daysInTargetMonth = days.filter(
-            (d) => d.getMonth() === targetDate.getMonth() && d.getFullYear() === targetDate.getFullYear()
-          );
-
-          // Mostra tutte le settimane, anche quelle a cavallo tra due mesi
-          const labelDate = daysInTargetMonth[Math.floor(daysInTargetMonth.length / 2)] ?? targetDate;
-          allWeeks.push({
-            weekNumber: weekCounter++,
-            days: weekDays,
-            monthYear: `${targetDate.getMonth()}-${targetDate.getFullYear()}`,
-            monthLabelDate: labelDate,
-          });
+        allWeeks.push({
+          weekNumber: weekCounter++,
+          days: weekDays,
+          monthYear,
+          monthLabelDate: middleDay,
         });
-      }
+      });
 
       return allWeeks;
     } else {
@@ -1142,6 +1145,7 @@ const Index = () => {
                         templates={templates}
                         onCategoryHover={setHoveredCategoryId}
                         onDateHover={setHoveredDate}
+                        onContentHover={setHoveredContentId}
                       />
                     </div>
                   );
@@ -1179,6 +1183,7 @@ const Index = () => {
                   templates={templates}
                   onCategoryHover={setHoveredCategoryId}
                   onDateHover={setHoveredDate}
+                  onContentHover={setHoveredContentId}
                 />
               ))
             )}
