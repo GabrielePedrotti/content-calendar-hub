@@ -557,58 +557,82 @@ export const CompactCell = ({
           ))}
         </div>
       ) : (
-        // More than 2 contents - show first one + popover with all
+        // More than 2 contents - show first one + popover with all (with context menu)
         <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
           <PopoverTrigger asChild>
-            <div 
+            <div
               className="w-full space-y-1 overflow-hidden py-0.5 cursor-pointer"
               onMouseEnter={() => setPopoverOpen(true)}
             >
-              <div
-                data-content-id={contents[0].id}
-                className="flex items-center gap-1.5 text-[11px] hover:bg-background/30 px-1 py-0.5 rounded transition-colors"
-                draggable
-                onDragStart={(e) => {
-                  e.stopPropagation();
-                  onDragStart(contents[0], e.altKey);
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleClick(e, contents[0]);
-                }}
-              >
-                <button
-                  onClick={(e) => handleTogglePublished(e, contents[0])}
-                  className="flex-shrink-0 hover:scale-110 transition-transform"
-                >
-                  {contents[0].published ? (
-                    <div className="h-2.5 w-2.5 rounded-full bg-green-500 flex items-center justify-center">
-                      <Check className="h-1.5 w-1.5 text-white" strokeWidth={3} />
-                    </div>
-                  ) : (
-                    <div className="h-2.5 w-2.5 rounded-full bg-background border-2 border-muted-foreground/40" />
-                  )}
-                </button>
-                <span className={cn(
-                  "truncate flex-1 font-medium leading-tight",
-                  contents[0].published && "opacity-75"
-                )}>
-                  {contents[0].title}
-                </span>
-                {contents[0].linkedContentId && (
-                  <button
-                    onMouseEnter={() => onLinkHover(contents[0].linkedContentId!)}
-                    onMouseLeave={() => onLinkHover(null)}
+              <ContextMenu>
+                <ContextMenuTrigger asChild>
+                  <div
+                    data-content-id={contents[0].id}
+                    className="flex items-center gap-1.5 text-[11px] hover:bg-background/30 px-1 py-0.5 rounded transition-colors"
+                    draggable
+                    onDragStart={(e) => {
+                      e.stopPropagation();
+                      onDragStart(contents[0], e.altKey);
+                    }}
                     onClick={(e) => {
                       e.stopPropagation();
-                      onLinkClick(contents[0]);
+                      handleClick(e, contents[0]);
                     }}
-                    className="flex-shrink-0 hover:scale-110 transition-transform"
                   >
-                    <Link2 className="h-2.5 w-2.5 text-primary" />
-                  </button>
-                )}
-              </div>
+                    <button
+                      onClick={(e) => handleTogglePublished(e, contents[0])}
+                      className="flex-shrink-0 hover:scale-110 transition-transform"
+                    >
+                      {contents[0].published ? (
+                        <div className="h-2.5 w-2.5 rounded-full bg-green-500 flex items-center justify-center">
+                          <Check className="h-1.5 w-1.5 text-white" strokeWidth={3} />
+                        </div>
+                      ) : (
+                        <div className="h-2.5 w-2.5 rounded-full bg-background border-2 border-muted-foreground/40" />
+                      )}
+                    </button>
+                    <span
+                      className={cn(
+                        "truncate flex-1 font-medium leading-tight",
+                        contents[0].published && "opacity-75",
+                      )}
+                    >
+                      {contents[0].title}
+                    </span>
+                    {contents[0].linkedContentId && (
+                      <button
+                        onMouseEnter={() => onLinkHover(contents[0].linkedContentId!)}
+                        onMouseLeave={() => onLinkHover(null)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onLinkClick(contents[0]);
+                        }}
+                        className="flex-shrink-0 hover:scale-110 transition-transform"
+                      >
+                        <Link2 className="h-2.5 w-2.5 text-primary" />
+                      </button>
+                    )}
+                  </div>
+                </ContextMenuTrigger>
+                <ContextMenuContent>
+                  <ContextMenuItem onClick={() => onDuplicate(contents[0])}>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Duplica
+                  </ContextMenuItem>
+                  <ContextMenuItem onClick={() => onTogglePublished(contents[0])}>
+                    <Check className="h-4 w-4 mr-2" />
+                    {contents[0].published ? "Segna non pubblicato" : "Segna pubblicato"}
+                  </ContextMenuItem>
+                  <ContextMenuItem
+                    onClick={() => onDelete(contents[0])}
+                    className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Elimina
+                  </ContextMenuItem>
+                </ContextMenuContent>
+              </ContextMenu>
+
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -619,99 +643,115 @@ export const CompactCell = ({
               </button>
             </div>
           </PopoverTrigger>
-          <PopoverContent 
+          <PopoverContent
             className="w-80 p-2 max-h-[400px] overflow-y-auto"
             onMouseLeave={() => setPopoverOpen(false)}
           >
             <div className="space-y-1">
               {contents.map((content) => (
-                <div
-                  key={content.id}
-                  data-content-id={content.id}
-                  className="flex items-center gap-2 text-sm hover:bg-accent px-2 py-1.5 rounded transition-colors cursor-pointer"
-                  draggable
-                  onDragStart={(e) => {
-                    e.stopPropagation();
-                    onDragStart(content, e.altKey);
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setPopoverOpen(false);
-                    handleClick(e, content);
-                  }}
-                >
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleTogglePublished(e, content);
-                    }}
-                    className="flex-shrink-0 hover:scale-110 transition-transform"
-                  >
-                    {content.published ? (
-                      <div className="h-3 w-3 rounded-full bg-green-500 flex items-center justify-center">
-                        <Check className="h-2 w-2 text-white" strokeWidth={3} />
-                      </div>
-                    ) : (
-                      <div className="h-3 w-3 rounded-full bg-background border-2 border-muted-foreground/40" />
-                    )}
-                  </button>
-                  <div className="flex-1 min-w-0">
-                    <p className={cn(
-                      "font-medium truncate",
-                      content.published && "opacity-75"
-                    )}>
-                      {content.title}
-                    </p>
-                    {content.notes && (
-                      <p className="text-xs text-muted-foreground truncate">
-                        {content.notes}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    {content.linkedContentId && (
+                <ContextMenu key={content.id}>
+                  <ContextMenuTrigger asChild>
+                    <div
+                      data-content-id={content.id}
+                      className="flex items-center gap-2 text-sm hover:bg-accent px-2 py-1.5 rounded transition-colors cursor-pointer"
+                      draggable
+                      onDragStart={(e) => {
+                        e.stopPropagation();
+                        onDragStart(content, e.altKey);
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPopoverOpen(false);
+                        handleClick(e, content);
+                      }}
+                    >
                       <button
-                        onMouseEnter={() => onLinkHover(content.linkedContentId!)}
-                        onMouseLeave={() => onLinkHover(null)}
                         onClick={(e) => {
                           e.stopPropagation();
-                          onLinkClick(content);
+                          handleTogglePublished(e, content);
                         }}
-                        className="hover:scale-110 transition-transform"
+                        className="flex-shrink-0 hover:scale-110 transition-transform"
                       >
-                        <Link2 className="h-3 w-3 text-primary" />
+                        {content.published ? (
+                          <div className="h-3 w-3 rounded-full bg-green-500 flex items-center justify-center">
+                            <Check className="h-2 w-2 text-white" strokeWidth={3} />
+                          </div>
+                        ) : (
+                          <div className="h-3 w-3 rounded-full bg-background border-2 border-muted-foreground/40" />
+                        )}
                       </button>
-                    )}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        onClick={(e) => e.stopPropagation()}
-                        className="h-6 w-6 hover:bg-background/50 rounded flex items-center justify-center"
-                      >
-                        <MoreVertical className="h-3 w-3" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onDuplicate(content);
-                          }}
-                        >
-                          <Copy className="h-4 w-4 mr-2" />
-                          Duplica
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onTogglePublished(content);
-                          }}
-                        >
-                          <Check className="h-4 w-4 mr-2" />
-                          {content.published ? "Segna non pubblicato" : "Segna pubblicato"}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={cn("font-medium truncate", content.published && "opacity-75")}>
+                          {content.title}
+                        </p>
+                        {content.notes && (
+                          <p className="text-xs text-muted-foreground truncate">{content.notes}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        {content.linkedContentId && (
+                          <button
+                            onMouseEnter={() => onLinkHover(content.linkedContentId!)}
+                            onMouseLeave={() => onLinkHover(null)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onLinkClick(content);
+                            }}
+                            className="hover:scale-110 transition-transform"
+                          >
+                            <Link2 className="h-3 w-3 text-primary" />
+                          </button>
+                        )}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            onClick={(e) => e.stopPropagation()}
+                            className="h-6 w-6 hover:bg-background/50 rounded flex items-center justify-center"
+                          >
+                            <MoreVertical className="h-3 w-3" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDuplicate(content);
+                              }}
+                            >
+                              <Copy className="h-4 w-4 mr-2" />
+                              Duplica
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onTogglePublished(content);
+                              }}
+                            >
+                              <Check className="h-4 w-4 mr-2" />
+                              {content.published ? "Segna non pubblicato" : "Segna pubblicato"}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  </ContextMenuTrigger>
+
+                  <ContextMenuContent>
+                    <ContextMenuItem onClick={() => onDuplicate(content)}>
+                      <Copy className="h-4 w-4 mr-2" />
+                      Duplica
+                    </ContextMenuItem>
+                    <ContextMenuItem onClick={() => onTogglePublished(content)}>
+                      <Check className="h-4 w-4 mr-2" />
+                      {content.published ? "Segna non pubblicato" : "Segna pubblicato"}
+                    </ContextMenuItem>
+                    <ContextMenuItem
+                      onClick={() => onDelete(content)}
+                      className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Elimina
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
               ))}
             </div>
           </PopoverContent>

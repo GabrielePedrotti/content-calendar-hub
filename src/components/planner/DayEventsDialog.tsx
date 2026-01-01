@@ -93,7 +93,7 @@ export const DayEventsDialog = ({
 
   const handleSaveEdit = () => {
     if (!selectedContent || !onSaveContent) return;
-    
+
     const updatedContent: ContentItem = {
       ...selectedContent,
       title: editTitle,
@@ -107,10 +107,23 @@ export const DayEventsDialog = ({
       checklist: editChecklist.length > 0 ? editChecklist : undefined,
       linkedContentId: editLinkedContentId,
     };
-    
+
     onSaveContent(updatedContent);
     setSelectedContent(updatedContent);
     setIsEditing(false);
+  };
+
+  const handleToggleChecklistItem = (itemId: string) => {
+    if (!selectedContent || !onSaveContent) return;
+    const checklist = selectedContent.checklist ?? [];
+    const updatedContent: ContentItem = {
+      ...selectedContent,
+      checklist: checklist.map((it) =>
+        it.id === itemId ? { ...it, isDone: !it.isDone } : it,
+      ),
+    };
+    onSaveContent(updatedContent);
+    setSelectedContent(updatedContent);
   };
 
   // Reset selection when dialog closes
@@ -356,6 +369,7 @@ export const DayEventsDialog = ({
                     onDeleteContent(selectedContent.id);
                     setSelectedContent(null);
                   }}
+                  onToggleChecklistItem={handleToggleChecklistItem}
                 />
               )
             ) : (
@@ -745,9 +759,10 @@ interface EventDetailsProps {
   linkedContent: ContentItem | null;
   onEdit: () => void;
   onDelete: () => void;
+  onToggleChecklistItem?: (itemId: string) => void;
 }
 
-const EventDetails = ({ content, category, linkedContent, onEdit, onDelete }: EventDetailsProps) => {
+const EventDetails = ({ content, category, linkedContent, onEdit, onDelete, onToggleChecklistItem }: EventDetailsProps) => {
   const priorityConfig = content.priority ? PRIORITY_CONFIG[content.priority] : null;
 
   return (
@@ -838,7 +853,11 @@ const EventDetails = ({ content, category, linkedContent, onEdit, onDelete }: Ev
               <div className="space-y-1">
                 {content.checklist.map((item) => (
                   <div key={item.id} className="flex items-center gap-2 text-sm">
-                    <Checkbox checked={item.isDone} disabled className="shrink-0" />
+                    <Checkbox
+                      checked={item.isDone}
+                      onCheckedChange={() => onToggleChecklistItem?.(item.id)}
+                      className="shrink-0"
+                    />
                     <span className={cn(item.isDone && "line-through text-muted-foreground")}>{item.label}</span>
                   </div>
                 ))}
