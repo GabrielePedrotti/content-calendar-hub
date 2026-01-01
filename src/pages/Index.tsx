@@ -10,6 +10,7 @@ import { InfoDialog } from "@/components/planner/InfoDialog";
 import { VacationManager } from "@/components/planner/VacationManager";
 import { TaskView } from "@/components/planner/TaskView";
 import { TaskListView } from "@/components/planner/TaskListView";
+import { KanbanView } from "@/components/planner/KanbanView";
 import { TemplateManager } from "@/components/planner/TemplateManager";
 import { SeriesManager } from "@/components/planner/SeriesManager";
 // ShortsPresetManager removed - functionality merged into SeriesManager
@@ -19,7 +20,7 @@ import { Category, CategoryFeatures, DEFAULT_CATEGORY_FEATURES, ContentItem, Wee
 import { User } from "@/types/auth";
 import { InitialDataPayload } from "@/types/sync";
 import { Button } from "@/components/ui/button";
-import { Info, Calendar, ListTodo, List, LogOut, Wifi, WifiOff, Loader2, Undo2 } from "lucide-react";
+import { Info, Calendar, ListTodo, List, LogOut, Wifi, WifiOff, Loader2, Undo2, Columns3 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { useUndoStack } from "@/hooks/useUndoStack";
@@ -77,7 +78,7 @@ const Index = () => {
   const [preselectedCategory, setPreselectedCategory] = useState<string | undefined>();
   const [preselectedDate, setPreselectedDate] = useState<Date | undefined>();
   const [preselectedTemplateId, setPreselectedTemplateId] = useState<string | undefined>();
-  const [viewMode, setViewMode] = useState<"planner" | "task" | "tasklist">("planner");
+  const [viewMode, setViewMode] = useState<"planner" | "task" | "tasklist" | "kanban">("planner");
   const [cellOpacity, setCellOpacity] = useState({ empty: 8, filled: 35 });
   const [endlessMode, setEndlessMode] = useState(false);
   const [endlessWeeksBefore, setEndlessWeeksBefore] = useState(0);
@@ -1063,7 +1064,7 @@ const Index = () => {
           }
         />
 
-      <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "planner" | "task" | "tasklist")} className="flex-1 flex flex-col overflow-hidden">
+      <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "planner" | "task" | "tasklist" | "kanban")} className="flex-1 flex flex-col overflow-hidden">
         <div className="flex items-center border-b border-grid-border bg-background sticky top-0 z-50">
           <TabsList className="justify-start rounded-none h-auto p-0 bg-transparent border-0">
             <TabsTrigger value="planner" className="gap-2 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
@@ -1073,6 +1074,10 @@ const Index = () => {
             <TabsTrigger value="task" className="gap-2 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
               <ListTodo className="h-4 w-4" />
               Oggi
+            </TabsTrigger>
+            <TabsTrigger value="kanban" className="gap-2 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
+              <Columns3 className="h-4 w-4" />
+              Kanban
             </TabsTrigger>
             <TabsTrigger value="tasklist" className="gap-2 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
               <List className="h-4 w-4" />
@@ -1196,6 +1201,16 @@ const Index = () => {
             categories={categories}
             onTogglePublished={handleTogglePublished}
             onScrollToContent={handleScrollToContent}
+          />
+        </TabsContent>
+
+        <TabsContent value="kanban" className="m-0 flex-1 overflow-hidden">
+          <KanbanView
+            contents={contents}
+            categories={categories}
+            onTogglePublished={handleTogglePublished}
+            onScrollToContent={handleScrollToContent}
+            onEditContent={(content) => handleEditContent(content)}
           />
         </TabsContent>
 
