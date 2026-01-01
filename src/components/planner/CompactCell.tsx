@@ -57,6 +57,7 @@ interface CompactCellProps {
   onDateHover?: (date: Date | null) => void;
   onContentHover?: (contentId: string | null) => void;
   cellDate?: Date;
+  showMonthBoundary?: boolean;
 }
 
 export const CompactCell = ({
@@ -89,6 +90,7 @@ export const CompactCell = ({
   onDateHover,
   onContentHover,
   cellDate,
+  showMonthBoundary = false,
 }: CompactCellProps) => {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -248,6 +250,12 @@ export const CompactCell = ({
       baseStyle.borderBottomWidth = '2px';
       baseStyle.borderTopColor = `hsl(${category.color} / 0.6)`;
       baseStyle.borderBottomColor = `hsl(${category.color} / 0.6)`;
+    }
+
+    // Bordo divisorio tra mesi diversi (endless mode)
+    if (showMonthBoundary) {
+      baseStyle.borderLeftWidth = '2px';
+      baseStyle.borderLeftColor = 'hsl(var(--month-divider))';
     }
     
     return baseStyle;

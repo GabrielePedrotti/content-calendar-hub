@@ -2,7 +2,7 @@ import { useState } from "react";
 import { WeekDay, Category, ContentItem, VacationPeriod } from "@/types/planner";
 import { CompactCell } from "./CompactCell";
 import { DayEventsDialog } from "./DayEventsDialog";
-import { format, isWithinInterval, isSameDay, isToday } from "date-fns";
+import { format, isWithinInterval, isSameDay, isToday, getMonth } from "date-fns";
 import { it } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
@@ -89,6 +89,15 @@ export const CompactWeekGrid = ({
   // In modalità normale, non c'è mese di riferimento (tutti i giorni visibili)
   const referenceMonth = null; // Rimosso il controllo per mostrare sempre tutti i giorni
 
+  // In endless mode, determina se la settimana attraversa due mesi
+  const weekMonths = endlessMode 
+    ? [...new Set(weekDays.map(day => getMonth(day.date)))]
+    : [];
+  const isCrossMonthWeek = weekMonths.length > 1;
+
+  // Mese di riferimento per questa settimana (il primo mese che appare)
+  const primaryMonth = endlessMode && monthLabelDate ? getMonth(monthLabelDate) : null;
+
   // Calcola il numero massimo di contenuti per ogni riga di categoria
   const getMaxContentsInRow = (categoryId: string) => {
     let max = 0;
@@ -105,6 +114,14 @@ export const CompactWeekGrid = ({
   const getRowHeight = (maxContents: number) => {
     if (maxContents <= 1) return "44px";
     return "60px";
+  };
+
+  // Determina se questo giorno è il primo di un mese diverso nella settimana
+  const isMonthBoundary = (dayIndex: number) => {
+    if (!endlessMode || !isCrossMonthWeek || dayIndex === 0) return false;
+    const currentMonth = getMonth(weekDays[dayIndex].date);
+    const prevMonth = getMonth(weekDays[dayIndex - 1].date);
+    return currentMonth !== prevMonth;
   };
 
   return (
@@ -142,7 +159,7 @@ export const CompactWeekGrid = ({
       <div className="flex-1 overflow-x-auto">
         {/* Header giorni */}
         <div className="grid grid-cols-7">
-          {weekDays.map((day) => {
+          {weekDays.map((day, dayIndex) => {
             const dayContents = contents.filter((c) =>
               isSameDay(c.date, day.date)
             );
@@ -157,6 +174,11 @@ export const CompactWeekGrid = ({
 
             const isTodayDate = isToday(day.date);
             
+            // Controlla se questo giorno è di un mese diverso dal mese primario della settimana
+            const dayMonth = getMonth(day.date);
+            const isDifferentMonth = endlessMode && isCrossMonthWeek && primaryMonth !== null && dayMonth !== primaryMonth;
+            const showMonthBoundary = isMonthBoundary(dayIndex);
+            
             return (
               <div
                 key={day.date.toISOString()}
@@ -166,11 +188,18 @@ export const CompactWeekGrid = ({
                   day.isSunday && "bg-sunday-accent",
                   vacationForDay && "bg-vacation-accent border-vacation-accent",
                   !isInReferenceMonth && "opacity-40 cursor-default hover:bg-transparent",
-                  isTodayDate && "bg-[hsl(var(--today-accent)/0.15)] ring-2 ring-[hsl(var(--today-ring))] ring-inset"
+                  isTodayDate && "bg-[hsl(var(--today-accent)/0.15)] ring-2 ring-[hsl(var(--today-ring))] ring-inset",
+                  showMonthBoundary && "border-l-2 border-l-[hsl(var(--month-divider))]"
                 )}
               >
                 {isInReferenceMonth ? (
                   <>
+                    {/* Badge mese per giorni di mesi diversi */}
+                    {isDifferentMonth && (
+                      <div className="absolute top-0.5 left-0.5 text-[7px] font-bold uppercase bg-[hsl(var(--month-badge-bg))] text-[hsl(var(--month-badge-text))] px-1 py-0.5 rounded leading-none">
+                        {format(day.date, "MMM", { locale: it })}
+                      </div>
+                    )}
                     <div className="flex items-center gap-1">
                       <div className={cn(
                         "text-[10px] font-medium uppercase",
@@ -212,7 +241,7 @@ export const CompactWeekGrid = ({
               const maxInRow = getMaxContentsInRow(category.id);
               return (
                 <div key={category.id} className="grid grid-cols-7">
-                  {weekDays.map((day) => {
+                  {weekDays.map((day, dayIndex) => {
                     const cellContents = contents.filter(
                       (c) => c.categoryId === category.id && isSameDay(c.date, day.date)
                     );
@@ -223,6 +252,9 @@ export const CompactWeekGrid = ({
                       ? day.date.getMonth() !== referenceMonth.getMonth() || 
                         day.date.getFullYear() !== referenceMonth.getFullYear()
                       : false;
+
+                    // Bordo divisorio tra mesi
+                    const showMonthBoundary = isMonthBoundary(dayIndex);
 
                     return (
                       <CompactCell
@@ -260,6 +292,7 @@ export const CompactWeekGrid = ({
                         onDateHover={onDateHover}
                         onContentHover={onContentHover}
                         cellDate={day.date}
+                        showMonthBoundary={showMonthBoundary}
                       />
                     );
                   })}
