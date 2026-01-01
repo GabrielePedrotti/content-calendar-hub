@@ -1,7 +1,7 @@
 import { ContentItem, Category } from "@/types/planner";
 import { cn } from "@/lib/utils";
 import { useState, useRef, useEffect } from "react";
-import { Check, MoreVertical, Copy, Link2, Plus, Trash2 } from "lucide-react";
+import { Check, MoreVertical, Copy, Link2, Plus, Trash2, LayoutTemplate } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +13,9 @@ import {
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
 } from "@/components/ui/context-menu";
 import {
   Tooltip,
@@ -52,6 +55,7 @@ interface CompactCellProps {
   isDisabled?: boolean;
   isPrimaryTemplateMode?: boolean;
   isSecondaryTemplateMode?: boolean;
+  templates?: { id: string; name: string; defaultCategoryId?: string }[];
 }
 
 export const CompactCell = ({
@@ -79,6 +83,7 @@ export const CompactCell = ({
   isDisabled = false,
   isPrimaryTemplateMode = false,
   isSecondaryTemplateMode = false,
+  templates = [],
 }: CompactCellProps) => {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -273,6 +278,44 @@ export const CompactCell = ({
     </ContextMenu>
   );
 
+  // Get templates for this category
+  const categoryTemplates = templates.filter(
+    (t) => t.defaultCategoryId === category.id || !t.defaultCategoryId
+  );
+
+  // Empty cell context menu
+  const renderEmptyCellContextMenu = (children: React.ReactNode) => (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        {children}
+      </ContextMenuTrigger>
+      <ContextMenuContent>
+        <ContextMenuItem onClick={() => onEdit()}>
+          <Plus className="h-4 w-4 mr-2" />
+          Nuovo contenuto
+        </ContextMenuItem>
+        {categoryTemplates.length > 0 && (
+          <ContextMenuSub>
+            <ContextMenuSubTrigger>
+              <LayoutTemplate className="h-4 w-4 mr-2" />
+              Usa template
+            </ContextMenuSubTrigger>
+            <ContextMenuSubContent>
+              {categoryTemplates.map((template) => (
+                <ContextMenuItem
+                  key={template.id}
+                  onClick={() => onEdit(undefined, template.id)}
+                >
+                  {template.name}
+                </ContextMenuItem>
+              ))}
+            </ContextMenuSubContent>
+          </ContextMenuSub>
+        )}
+      </ContextMenuContent>
+    </ContextMenu>
+  );
+
   return (
     <div
       ref={cellRef}
@@ -296,14 +339,16 @@ export const CompactCell = ({
       onDrop={!isDisabled ? handleDrop : undefined}
     >
       {contents.length === 0 ? (
-        <span className={cn(
-          "text-[10px] transition-colors",
-          isDisabled 
-            ? "text-muted-foreground/20" 
-            : "text-muted-foreground/0 group-hover:text-muted-foreground/60"
-        )}>
-          +
-        </span>
+        renderEmptyCellContextMenu(
+          <span className={cn(
+            "text-[10px] transition-colors w-full h-full flex items-center justify-center",
+            isDisabled 
+              ? "text-muted-foreground/20" 
+              : "text-muted-foreground/0 group-hover:text-muted-foreground/60"
+          )}>
+            +
+          </span>
+        )
       ) : contents.length === 1 ? (
         // Single content - centered display with context menu
         renderContextMenu(contents[0], 
@@ -441,67 +486,86 @@ export const CompactCell = ({
         // Two contents - show both normally with context menu
         <div className="w-full space-y-1 overflow-hidden py-0.5">
           {contents.map((content) => (
-            renderContextMenu(content,
-              <TooltipProvider key={content.id}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div
-                      data-content-id={content.id}
-                      className="flex items-center gap-1.5 text-[11px] hover:bg-background/30 px-1 py-0.5 rounded transition-colors cursor-pointer"
-                      draggable
-                      onDragStart={(e) => {
-                        e.stopPropagation();
-                        onDragStart(content, e.altKey);
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleClick(e, content);
-                      }}
-                    >
-                      <button
-                        onClick={(e) => handleTogglePublished(e, content)}
-                        className="flex-shrink-0 hover:scale-110 transition-transform"
+            <ContextMenu key={content.id}>
+              <ContextMenuTrigger asChild>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div
+                        data-content-id={content.id}
+                        className="flex items-center gap-1.5 text-[11px] hover:bg-background/30 px-1 py-0.5 rounded transition-colors cursor-pointer"
+                        draggable
+                        onDragStart={(e) => {
+                          e.stopPropagation();
+                          onDragStart(content, e.altKey);
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleClick(e, content);
+                        }}
                       >
-                        {content.published ? (
-                          <div className="h-2.5 w-2.5 rounded-full bg-green-500 flex items-center justify-center">
-                            <Check className="h-1.5 w-1.5 text-white" strokeWidth={3} />
-                          </div>
-                        ) : (
-                          <div className="h-2.5 w-2.5 rounded-full bg-background border-2 border-muted-foreground/40" />
-                        )}
-                      </button>
-                      <span className={cn(
-                        "truncate flex-1 font-medium leading-tight",
-                        content.published && "opacity-75"
-                      )}>
-                        {content.title}
-                      </span>
-                      {content.linkedContentId && (
                         <button
-                          onMouseEnter={() => onLinkHover(content.linkedContentId!)}
-                          onMouseLeave={() => onLinkHover(null)}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onLinkClick(content);
-                          }}
+                          onClick={(e) => handleTogglePublished(e, content)}
                           className="flex-shrink-0 hover:scale-110 transition-transform"
                         >
-                          <Link2 className="h-2.5 w-2.5 text-primary" />
+                          {content.published ? (
+                            <div className="h-2.5 w-2.5 rounded-full bg-green-500 flex items-center justify-center">
+                              <Check className="h-1.5 w-1.5 text-white" strokeWidth={3} />
+                            </div>
+                          ) : (
+                            <div className="h-2.5 w-2.5 rounded-full bg-background border-2 border-muted-foreground/40" />
+                          )}
                         </button>
+                        <span className={cn(
+                          "truncate flex-1 font-medium leading-tight",
+                          content.published && "opacity-75"
+                        )}>
+                          {content.title}
+                        </span>
+                        {content.linkedContentId && (
+                          <button
+                            onMouseEnter={() => onLinkHover(content.linkedContentId!)}
+                            onMouseLeave={() => onLinkHover(null)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onLinkClick(content);
+                            }}
+                            className="flex-shrink-0 hover:scale-110 transition-transform"
+                          >
+                            <Link2 className="h-2.5 w-2.5 text-primary" />
+                          </button>
+                        )}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="max-w-[300px]">{content.title}</p>
+                      {content.notes && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {content.notes}
+                        </p>
                       )}
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="max-w-[300px]">{content.title}</p>
-                    {content.notes && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {content.notes}
-                      </p>
-                    )}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </ContextMenuTrigger>
+              <ContextMenuContent>
+                <ContextMenuItem onClick={() => onDuplicate(content)}>
+                  <Copy className="h-4 w-4 mr-2" />
+                  Duplica
+                </ContextMenuItem>
+                <ContextMenuItem onClick={() => onTogglePublished(content)}>
+                  <Check className="h-4 w-4 mr-2" />
+                  {content.published ? "Segna non pubblicato" : "Segna pubblicato"}
+                </ContextMenuItem>
+                <ContextMenuItem
+                  onClick={() => onDelete(content)}
+                  className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Elimina
+                </ContextMenuItem>
+              </ContextMenuContent>
+            </ContextMenu>
           ))}
         </div>
       ) : (

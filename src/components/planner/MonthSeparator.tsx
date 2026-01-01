@@ -12,7 +12,7 @@ export const MonthSeparator = ({ date }: MonthSeparatorProps) => {
   const capitalizedMonth = month.charAt(0).toUpperCase() + month.slice(1);
 
   return (
-    <div className="sticky top-0 z-20 py-3 bg-background/95 backdrop-blur-sm">
+    <div className="sticky top-0 z-10 py-3 bg-background/95 backdrop-blur-sm">
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-primary/20 to-accent/10 border border-primary/30">
           <CalendarDays className="h-5 w-5 text-primary" />
