@@ -103,6 +103,9 @@ export interface ContentTemplate {
   frequencyPattern?: 'none' | 'daily' | 'weekdays' | 'weekly' | 'custom';
   frequencyCustomDays?: number[]; // 0-6 for Sun-Sat when pattern is 'custom'
   frequencyCount?: number; // How many events to create at once
+  // Shorts generation settings (from old shorts preset)
+  shortsCount?: number; // How many shorts to create per video (default: 1)
+  shortsDayOffset?: number; // Days after video to schedule shorts (default: 1)
 }
 
 // Series system (advanced repetitions)

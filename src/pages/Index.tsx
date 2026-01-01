@@ -649,33 +649,50 @@ const Index = () => {
       toast.success("Contenuto creato");
       
       
-      // Generate short from linked template (for video type with linked short template)
+      // Generate shorts from linked template (for video type with linked short template)
       if (linkedShortTemplateId && content.contentType === "video") {
         const shortTemplate = templates.find((t) => t.id === linkedShortTemplateId);
+        // Find the video template to get shorts settings
+        const videoTemplate = content.templateId 
+          ? templates.find((t) => t.id === content.templateId)
+          : null;
+        
         if (shortTemplate) {
-          const shortContent: ContentItem = {
-            id: `short-${Date.now()}`,
-            title: shortTemplate.titlePrefix 
-              ? `${shortTemplate.titlePrefix}${newContent.title}${shortTemplate.titleSuffix || ""}`
-              : newContent.title,
-            categoryId: shortTemplate.defaultCategoryId || newContent.categoryId,
-            date: addDays(newContent.date, 1), // Default: 1 day after parent
-            published: false,
-            contentType: "short",
-            parentId: newContent.id,
-            templateId: shortTemplate.id,
-            pipelineStageId: shortTemplate.defaultPipeline[0]?.id,
-            checklist: shortTemplate.defaultChecklist.map((item, idx) => ({
-              id: `check-${Date.now()}-${idx}`,
-              label: item.label,
-              isDone: false,
-              order: item.order,
-            })),
-          };
+          const shortsCount = videoTemplate?.shortsCount || 1;
+          const shortsDayOffset = videoTemplate?.shortsDayOffset || 1;
           
-          setContents((prev) => [...prev, shortContent]);
-          syncContentCreate(shortContent);
-          toast.success("Short creato automaticamente dal template");
+          for (let i = 0; i < shortsCount; i++) {
+            const shortContent: ContentItem = {
+              id: `short-${Date.now()}-${i}`,
+              title: shortTemplate.titlePrefix 
+                ? `${shortTemplate.titlePrefix}${newContent.title}${shortTemplate.titleSuffix || ""}`
+                : shortsCount > 1 
+                  ? `${newContent.title} - Short ${i + 1}`
+                  : newContent.title,
+              categoryId: shortTemplate.defaultCategoryId || newContent.categoryId,
+              date: addDays(newContent.date, shortsDayOffset + i), // Offset + sequential days
+              published: false,
+              contentType: "short",
+              parentId: newContent.id,
+              templateId: shortTemplate.id,
+              pipelineStageId: shortTemplate.defaultPipeline[0]?.id,
+              checklist: shortTemplate.defaultChecklist.map((item, idx) => ({
+                id: `check-${Date.now()}-${i}-${idx}`,
+                label: item.label,
+                isDone: false,
+                order: item.order,
+              })),
+            };
+            
+            setContents((prev) => [...prev, shortContent]);
+            syncContentCreate(shortContent);
+          }
+          
+          if (shortsCount > 1) {
+            toast.success(`${shortsCount} shorts creati automaticamente`);
+          } else {
+            toast.success("Short creato automaticamente dal template");
+          }
         }
       }
     }
