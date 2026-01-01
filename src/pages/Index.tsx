@@ -116,8 +116,9 @@ const Index = () => {
   // Track if "2" key is pressed for secondary template
   const [isSecondaryTemplateMode, setIsSecondaryTemplateMode] = useState(false);
 
-  // Track hovered category for "N" shortcut
+  // Track hovered category and date for "N" shortcut
   const [hoveredCategoryId, setHoveredCategoryId] = useState<string | null>(null);
+  const [hoveredDate, setHoveredDate] = useState<Date | null>(null);
 
   // Undo Stack interface (implementation after useWebSocket)
   interface UndoState {
@@ -348,10 +349,12 @@ const Index = () => {
         return;
       }
       
-      // "N" opens new content dialog (with hovered category if any)
+      // "N" opens new content dialog (with hovered category and date if any)
       if (e.key === "n" || e.key === "N") {
         e.preventDefault();
-        if (hoveredCategoryId) {
+        if (hoveredCategoryId && hoveredDate) {
+          handleEditContent(undefined, hoveredCategoryId, hoveredDate, undefined);
+        } else if (hoveredCategoryId) {
           handleEditContent(undefined, hoveredCategoryId, undefined, undefined);
         } else {
           handleAddContent();
@@ -385,7 +388,7 @@ const Index = () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, []);
+  }, [hoveredCategoryId, hoveredDate]);
 
   // Save data to cache when it changes
   useEffect(() => {
@@ -1138,6 +1141,7 @@ const Index = () => {
                         isSecondaryTemplateMode={isSecondaryTemplateMode}
                         templates={templates}
                         onCategoryHover={setHoveredCategoryId}
+                        onDateHover={setHoveredDate}
                       />
                     </div>
                   );
@@ -1174,6 +1178,7 @@ const Index = () => {
                   isSecondaryTemplateMode={isSecondaryTemplateMode}
                   templates={templates}
                   onCategoryHover={setHoveredCategoryId}
+                  onDateHover={setHoveredDate}
                 />
               ))
             )}

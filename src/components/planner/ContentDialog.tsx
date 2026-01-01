@@ -120,6 +120,7 @@ export const ContentDialog = ({
       // Use preselectedCategory first, then fallback to first category
       const initialCategory = preselectedCategory || categories[0]?.id || "";
       setCategoryId(initialCategory);
+      // Use preselectedDate if provided, otherwise use today
       setDate(preselectedDate ? format(preselectedDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd"));
       setPublished(false);
       setNotes("");
@@ -162,8 +163,7 @@ export const ContentDialog = ({
         setSelectedTemplateId("");
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, preselectedCategory, preselectedDate, preselectedTemplateId, content, categories, templates]);
 
   // Apply template when selected
   const handleTemplateChange = (templateId: string) => {
