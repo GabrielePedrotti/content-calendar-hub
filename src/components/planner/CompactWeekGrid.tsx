@@ -85,8 +85,9 @@ export const CompactWeekGrid = ({
     return contents.filter((c) => isSameDay(c.date, date));
   };
 
-  // Determina il mese di riferimento per le celle (in modalità endless)
-  const referenceMonth = endlessMode && monthLabelDate ? monthLabelDate : null;
+  // In modalità endless, mostriamo TUTTI i giorni della settimana senza nasconderli
+  // In modalità normale, non c'è mese di riferimento (tutti i giorni visibili)
+  const referenceMonth = null; // Rimosso il controllo per mostrare sempre tutti i giorni
 
   // Calcola il numero massimo di contenuti per ogni riga di categoria
   const getMaxContentsInRow = (categoryId: string) => {
