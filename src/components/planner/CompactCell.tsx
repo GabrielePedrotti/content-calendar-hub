@@ -54,6 +54,8 @@ interface CompactCellProps {
   isSecondaryTemplateMode?: boolean;
   templates?: { id: string; name: string; defaultCategoryId?: string }[];
   onCategoryHover?: (categoryId: string | null) => void;
+  onDateHover?: (date: Date | null) => void;
+  cellDate?: Date;
 }
 
 export const CompactCell = ({
@@ -83,6 +85,8 @@ export const CompactCell = ({
   isSecondaryTemplateMode = false,
   templates = [],
   onCategoryHover,
+  onDateHover,
+  cellDate,
 }: CompactCellProps) => {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -289,14 +293,24 @@ export const CompactCell = ({
         {children}
       </ContextMenuTrigger>
       <ContextMenuContent>
-        <ContextMenuItem onClick={() => onEdit()}>
+        <ContextMenuItem onClick={() => {
+          // Reset editing state before opening dialog
+          setIsEditing(false);
+          setEditingContent(undefined);
+          onEdit();
+        }}>
           <Plus className="h-4 w-4 mr-2" />
           Nuovo contenuto
         </ContextMenuItem>
         {categoryTemplates.map((template) => (
           <ContextMenuItem
             key={template.id}
-            onClick={() => onEdit(undefined, template.id)}
+            onClick={() => {
+              // Reset editing state before opening dialog
+              setIsEditing(false);
+              setEditingContent(undefined);
+              onEdit(undefined, template.id);
+            }}
           >
             <LayoutTemplate className="h-4 w-4 mr-2" />
             {template.name}
@@ -324,8 +338,14 @@ export const CompactCell = ({
         isHighlighted && "ring-2 ring-primary animate-pulse"
       )}
       onClick={(e) => !isDisabled && handleClick(e)}
-      onMouseEnter={() => onCategoryHover?.(category.id)}
-      onMouseLeave={() => onCategoryHover?.(null)}
+      onMouseEnter={() => {
+        onCategoryHover?.(category.id);
+        onDateHover?.(cellDate || date);
+      }}
+      onMouseLeave={() => {
+        onCategoryHover?.(null);
+        onDateHover?.(null);
+      }}
       onDragOver={!isDisabled ? handleDragOver : undefined}
       onDragLeave={!isDisabled ? handleDragLeave : undefined}
       onDrop={!isDisabled ? handleDrop : undefined}
