@@ -6,7 +6,6 @@ import {
 } from "@/components/ui/dialog";
 import { Info, Mouse, Calendar, Link2, Layers, Umbrella, Settings2, ListTodo, Grid3X3, Keyboard, LayoutGrid } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 
 interface InfoDialogProps {
@@ -17,8 +16,8 @@ interface InfoDialogProps {
 export const InfoDialog = ({ open, onOpenChange }: InfoDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="px-6 py-4 border-b bg-muted/30 shrink-0">
+      <DialogContent className="sm:max-w-[900px] max-h-[70vh] h-[70vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogHeader className="px-6 py-3 border-b bg-muted/30 shrink-0">
           <DialogTitle className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-primary/10">
               <Info className="h-5 w-5 text-primary" />
@@ -33,132 +32,106 @@ export const InfoDialog = ({ open, onOpenChange }: InfoDialogProps) => {
         </DialogHeader>
         
         <ScrollArea className="flex-1 min-h-0">
-          <div className="p-6 space-y-6">
-            {/* Interazioni Celle */}
+          <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
             <Section
               icon={<Mouse className="h-4 w-4" />}
               title="Interazioni Celle"
               color="blue"
               items={[
-                { shortcut: "Click su cella vuota", desc: "Inserimento titolo inline rapido" },
+                { shortcut: "Click su cella vuota", desc: "Inserimento titolo inline" },
                 { shortcut: "Click su contenuto", desc: "Modifica titolo inline" },
-                { shortcut: "Shift/Ctrl/Alt + Click", desc: "Apri popup dettagli completo" },
-                { shortcut: "Invio", desc: "Salva modifica inline" },
+                { shortcut: "Shift/Ctrl/Alt + Click", desc: "Apri popup dettagli" },
+                { shortcut: "Invio", desc: "Salva modifica" },
                 { shortcut: "Esc", desc: "Annulla modifica" },
               ]}
             />
 
-            <Separator />
-
-            {/* Scorciatoie da tastiera */}
             <Section
               icon={<Keyboard className="h-4 w-4" />}
               title="Scorciatoie Tastiera"
               color="purple"
               items={[
-                { shortcut: "N", desc: "Nuovo contenuto (usa categoria/data sotto il mouse)" },
-                { shortcut: "C", desc: "Elimina il contenuto sotto il mouse" },
-                { shortcut: "1 + Click", desc: "Crea contenuto con template primario" },
-                { shortcut: "2 + Click", desc: "Crea contenuto con template secondario" },
+                { shortcut: "N", desc: "Nuovo contenuto" },
+                { shortcut: "C", desc: "Elimina contenuto hover" },
+                { shortcut: "1 + Click", desc: "Template primario" },
+                { shortcut: "2 + Click", desc: "Template secondario" },
               ]}
             />
 
-            <Separator />
-
-            {/* Drag & Drop */}
             <Section
               icon={<Grid3X3 className="h-4 w-4" />}
               title="Drag & Drop"
               color="orange"
               items={[
-                { shortcut: "Drag normale", desc: "Sposta il contenuto in una nuova cella" },
-                { shortcut: "ALT + Drag", desc: "Duplica il contenuto nella nuova cella" },
+                { shortcut: "Drag normale", desc: "Sposta contenuto" },
+                { shortcut: "ALT + Drag", desc: "Duplica contenuto" },
               ]}
             />
 
-            <Separator />
-
-            {/* Pubblicazione */}
             <Section
               icon={<Calendar className="h-4 w-4" />}
               title="Stati Pubblicazione"
               color="green"
               items={[
-                { shortcut: "Click sul pallino", desc: "Cambia stato pubblicato/da fare" },
-                { shortcut: "Pallino grigio", desc: "Contenuto da completare" },
-                { shortcut: "Pallino verde ✓", desc: "Contenuto pubblicato" },
+                { shortcut: "Click pallino", desc: "Cambia stato" },
+                { shortcut: "Pallino grigio", desc: "Da completare" },
+                { shortcut: "Pallino verde ✓", desc: "Pubblicato" },
               ]}
             />
 
-            <Separator />
-
-            {/* Collegamenti */}
             <Section
               icon={<Link2 className="h-4 w-4" />}
-              title="Collegamenti tra Contenuti"
+              title="Collegamenti"
               color="cyan"
               items={[
-                { shortcut: "Icona link", desc: "Indica contenuto collegato" },
-                { shortcut: "Hover su icona", desc: "Evidenzia la cella collegata" },
-                { shortcut: "Click su icona", desc: "Scrolla alla cella collegata" },
+                { shortcut: "Icona link", desc: "Contenuto collegato" },
+                { shortcut: "Hover icona", desc: "Evidenzia collegamento" },
+                { shortcut: "Click icona", desc: "Scrolla al collegato" },
               ]}
             />
 
-            <Separator />
-
-            {/* Celle Multiple */}
             <Section
               icon={<Layers className="h-4 w-4" />}
               title="Celle Multiple"
               color="indigo"
               items={[
-                { shortcut: "Più contenuti", desc: "Ogni cella può contenere più contenuti" },
-                { shortcut: "+N altri...", desc: "Mostra conteggio se più di 3 contenuti" },
-                { shortcut: "Click header giorno", desc: "Apre popup con tutti gli eventi" },
+                { shortcut: "Più contenuti", desc: "Multipli per cella" },
+                { shortcut: "+N altri...", desc: "Conteggio extra" },
+                { shortcut: "Click header", desc: "Popup tutti eventi" },
               ]}
             />
 
-            <Separator />
-
-            {/* Ferie */}
             <Section
               icon={<Umbrella className="h-4 w-4" />}
               title="Gestione Ferie"
               color="violet"
               items={[
-                { shortcut: "Gestisci Ferie", desc: "Aggiungi periodi dal menu Gestione" },
-                { shortcut: "Badge viola", desc: "Indica giorni di ferie" },
-                { shortcut: "Modifica nel popup", desc: "Ferie editabili dal popup giorno" },
+                { shortcut: "Menu Gestione", desc: "Aggiungi periodi" },
+                { shortcut: "Badge viola", desc: "Giorni ferie" },
               ]}
             />
 
-            <Separator />
-
-            {/* Funzionalità Avanzate */}
             <Section
               icon={<Settings2 className="h-4 w-4" />}
               title="Funzionalità Avanzate"
               color="amber"
               items={[
-                { shortcut: "Modalità Endless", desc: "Scroll infinito per tutti i mesi" },
-                { shortcut: "Filtri categoria", desc: "Filtra vista per categoria" },
-                { shortcut: "Template", desc: "Crea template con pipeline e checklist" },
-                { shortcut: "Serie", desc: "Genera contenuti ricorrenti" },
+                { shortcut: "Endless", desc: "Scroll infinito" },
+                { shortcut: "Filtri", desc: "Per categoria" },
+                { shortcut: "Template", desc: "Con pipeline/checklist" },
+                { shortcut: "Serie", desc: "Contenuti ricorrenti" },
               ]}
             />
 
-            <Separator />
-
-            {/* Viste */}
             <Section
               icon={<LayoutGrid className="h-4 w-4" />}
               title="Viste Disponibili"
               color="teal"
               items={[
-                { shortcut: "Planner", desc: "Vista calendario settimanale" },
-                { shortcut: "Oggi", desc: "Focus sui contenuti del giorno" },
-                { shortcut: "Task List", desc: "Lista verticale di tutti i task" },
-                { shortcut: "Kanban", desc: "Vista a colonne per scadenza" },
+                { shortcut: "Planner", desc: "Calendario settimanale" },
+                { shortcut: "Oggi", desc: "Focus del giorno" },
+                { shortcut: "Task List", desc: "Lista verticale" },
+                { shortcut: "Kanban", desc: "Vista a colonne" },
               ]}
             />
           </div>
