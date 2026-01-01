@@ -8,7 +8,7 @@ import {
   AuthSuccessPayload 
 } from '@/types/sync';
 import { User } from '@/types/auth';
-import { Category, ContentItem, VacationPeriod } from '@/types/planner';
+import { Category, ContentItem, VacationPeriod, ContentTemplate, Series } from '@/types/planner';
 
 const AUTH_TOKEN_KEY = 'planner_auth_token';
 const SYNC_STORAGE_KEY = 'planner_sync_queue';
@@ -22,6 +22,8 @@ interface UseWebSocketOptions {
   onContentChange?: (type: 'created' | 'updated' | 'deleted', payload: ContentItem | { id: string }) => void;
   onCategoryChange?: (type: 'created' | 'updated' | 'deleted', payload: Category | { id: string }) => void;
   onVacationChange?: (type: 'created' | 'deleted', payload: VacationPeriod | { id: string }) => void;
+  onTemplateChange?: (type: 'created' | 'updated' | 'deleted', payload: ContentTemplate | { id: string }) => void;
+  onSeriesChange?: (type: 'created' | 'updated' | 'deleted', payload: Series | { id: string }) => void;
   onError?: (error: string) => void;
 }
 
@@ -33,6 +35,8 @@ export const useWebSocket = ({
   onContentChange,
   onCategoryChange,
   onVacationChange,
+  onTemplateChange,
+  onSeriesChange,
   onError,
 }: UseWebSocketOptions) => {
   const [isConnected, setIsConnected] = useState(false);
@@ -42,11 +46,9 @@ export const useWebSocket = ({
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        // Assicurati che sia un array
         if (Array.isArray(parsed)) {
           return parsed;
         }
-        // Se non è un array, pulisci e ritorna vuoto
         localStorage.removeItem(SYNC_STORAGE_KEY);
         return [];
       } catch {
@@ -77,10 +79,8 @@ export const useWebSocket = ({
   const sendEvent = useCallback((event: ClientEvent) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(event));
-      // Rimuovi dalla coda se inviato
       setPendingEvents(prev => prev.filter(e => e.id !== event.id));
     } else {
-      // Aggiungi alla coda se non connesso
       setPendingEvents(prev => {
         if (prev.some(e => e.id === event.id)) return prev;
         return [...prev, event];
@@ -139,11 +139,35 @@ export const useWebSocket = ({
         onVacationChange?.('deleted', event.payload as { id: string });
         break;
 
+      case 'template:created':
+        onTemplateChange?.('created', event.payload as ContentTemplate);
+        break;
+
+      case 'template:updated':
+        onTemplateChange?.('updated', event.payload as ContentTemplate);
+        break;
+
+      case 'template:deleted':
+        onTemplateChange?.('deleted', event.payload as { id: string });
+        break;
+
+      case 'series:created':
+        onSeriesChange?.('created', event.payload as Series);
+        break;
+
+      case 'series:updated':
+        onSeriesChange?.('updated', event.payload as Series);
+        break;
+
+      case 'series:deleted':
+        onSeriesChange?.('deleted', event.payload as { id: string });
+        break;
+
       case 'error':
         onError?.(event.payload?.message || 'Errore sconosciuto');
         break;
     }
-  }, [onAuthSuccess, onAuthError, onInitialData, onContentChange, onCategoryChange, onVacationChange, onError]);
+  }, [onAuthSuccess, onAuthError, onInitialData, onContentChange, onCategoryChange, onVacationChange, onTemplateChange, onSeriesChange, onError]);
 
   // Connetti al WebSocket
   const connect = useCallback(() => {
@@ -159,13 +183,11 @@ export const useWebSocket = ({
       setIsConnected(true);
       setIsConnecting(false);
 
-      // Invia eventi pendenti
       pendingEvents.forEach(event => {
         wsRef.current?.send(JSON.stringify(event));
       });
       setPendingEvents([]);
 
-      // Se abbiamo un token salvato, prova auto-login
       const savedToken = localStorage.getItem(AUTH_TOKEN_KEY);
       if (savedToken) {
         const event = createEvent('auth:login', { token: savedToken });
@@ -187,7 +209,6 @@ export const useWebSocket = ({
       setIsConnected(false);
       setIsConnecting(false);
 
-      // Auto-reconnect dopo 3 secondi
       reconnectTimeoutRef.current = setTimeout(() => {
         if (wsUrl) connect();
       }, 3000);
@@ -283,10 +304,42 @@ export const useWebSocket = ({
     sendEvent(event);
   }, [createEvent, sendEvent]);
 
+  // === Template Events ===
+  const syncTemplateCreate = useCallback((template: ContentTemplate) => {
+    const event = createEvent('template:create', template);
+    sendEvent(event);
+  }, [createEvent, sendEvent]);
+
+  const syncTemplateUpdate = useCallback((template: ContentTemplate) => {
+    const event = createEvent('template:update', template);
+    sendEvent(event);
+  }, [createEvent, sendEvent]);
+
+  const syncTemplateDelete = useCallback((templateId: string) => {
+    const event = createEvent('template:delete', { id: templateId });
+    sendEvent(event);
+  }, [createEvent, sendEvent]);
+
+  // === Series Events ===
+  const syncSeriesCreate = useCallback((series: Series) => {
+    const event = createEvent('series:create', series);
+    sendEvent(event);
+  }, [createEvent, sendEvent]);
+
+  const syncSeriesUpdate = useCallback((series: Series) => {
+    const event = createEvent('series:update', series);
+    sendEvent(event);
+  }, [createEvent, sendEvent]);
+
+  const syncSeriesDelete = useCallback((seriesId: string) => {
+    const event = createEvent('series:delete', { id: seriesId });
+    sendEvent(event);
+  }, [createEvent, sendEvent]);
+
   // Cache locale per fallback offline
   const saveToLocalCache = useCallback((data: Partial<InitialDataPayload>) => {
     const stored = localStorage.getItem(SYNC_DATA_KEY);
-    let currentData: InitialDataPayload = { contents: [], categories: [], vacations: [] };
+    let currentData: InitialDataPayload = { contents: [], categories: [], vacations: [], templates: [], series: [] };
     if (stored) {
       try {
         currentData = JSON.parse(stored);
@@ -303,7 +356,7 @@ export const useWebSocket = ({
         return JSON.parse(stored);
       } catch {}
     }
-    return { contents: [], categories: [], vacations: [] };
+    return { contents: [], categories: [], vacations: [], templates: [], series: [] };
   }, []);
 
   return {
@@ -316,15 +369,25 @@ export const useWebSocket = ({
     login,
     logout,
     requestData,
-    // Sync
+    // Sync Content
     syncContentCreate,
     syncContentUpdate,
     syncContentDelete,
+    // Sync Category
     syncCategoryCreate,
     syncCategoryUpdate,
     syncCategoryDelete,
+    // Sync Vacation
     syncVacationCreate,
     syncVacationDelete,
+    // Sync Template
+    syncTemplateCreate,
+    syncTemplateUpdate,
+    syncTemplateDelete,
+    // Sync Series
+    syncSeriesCreate,
+    syncSeriesUpdate,
+    syncSeriesDelete,
     // Cache
     saveToLocalCache,
     loadFromLocalCache,
