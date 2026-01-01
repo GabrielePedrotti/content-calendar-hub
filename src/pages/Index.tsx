@@ -847,25 +847,103 @@ const Index = () => {
 
   const handleGenerateSeriesOccurrences = (seriesId: string) => {
     const series = seriesList.find((s) => s.id === seriesId);
-    if (!series) return;
+    if (!series || !series.isActive) return;
     const template = templates.find((t) => t.id === series.templateId);
+    
+    // Find existing episodes from this series to determine last scheduled date
+    const existingEpisodes = contents.filter((c) => c.seriesId === seriesId);
+    const lastEpisodeDate = existingEpisodes.length > 0
+      ? new Date(Math.max(...existingEpisodes.map((e) => e.date.getTime())))
+      : null;
+    
+    // Calculate next valid date based on pattern
+    const calculateNextDate = (): Date => {
+      // Start from the day after the last episode, or from startDate if no episodes yet
+      let candidateDate = lastEpisodeDate 
+        ? addDays(lastEpisodeDate, 1)
+        : new Date(series.startDate);
+      
+      // If we're starting fresh, use startDate as is if it matches the pattern
+      if (!lastEpisodeDate) {
+        if (isValidDateForPattern(candidateDate, series)) {
+          return candidateDate;
+        }
+      }
+      
+      // Find the next valid date
+      for (let i = 0; i < 365; i++) { // Max 1 year search
+        if (isValidDateForPattern(candidateDate, series)) {
+          // Check endDate constraint
+          if (series.endDate && candidateDate > series.endDate) {
+            break;
+          }
+          return candidateDate;
+        }
+        candidateDate = addDays(candidateDate, 1);
+      }
+      
+      // Fallback to today if no valid date found
+      return new Date();
+    };
+    
+    const isValidDateForPattern = (date: Date, s: Series): boolean => {
+      const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, ...
+      
+      switch (s.pattern) {
+        case 'daily':
+          return !s.options.skipWeekends || !isWeekend(date);
+        case 'weekdays':
+          return dayOfWeek >= 1 && dayOfWeek <= 5;
+        case 'weekly':
+          // Same day of week as startDate
+          return dayOfWeek === new Date(s.startDate).getDay();
+        case 'biweekly':
+          // Same day of week as startDate, every 2 weeks
+          if (dayOfWeek !== new Date(s.startDate).getDay()) return false;
+          const weeksDiff = Math.floor((date.getTime() - new Date(s.startDate).getTime()) / (7 * 24 * 60 * 60 * 1000));
+          return weeksDiff % 2 === 0;
+        case 'monthly':
+          // Same day of month as startDate
+          return date.getDate() === new Date(s.startDate).getDate();
+        case 'custom':
+          return s.customDays?.includes(dayOfWeek) ?? false;
+        default:
+          return true;
+      }
+    };
+    
+    // Check occurrences limit
+    if (series.occurrencesCount && existingEpisodes.length >= series.occurrencesCount) {
+      toast.error("Raggiunto il limite di episodi per questa serie");
+      return;
+    }
+    
+    const nextDate = calculateNextDate();
+    
+    // Check if we've passed the end date
+    if (series.endDate && nextDate > series.endDate) {
+      toast.error("La serie ha superato la data di fine");
+      return;
+    }
     
     // Generate next occurrence
     const title = (series.options.titlePattern || "{series_name} Ep. {n}")
       .replace("{series_name}", series.name)
       .replace("{n}", series.currentNumber.toString());
     
+    const categoryId = series.categoryId || template?.defaultCategoryId || categories[0]?.id || "";
+    
     const newContent: ContentItem = {
       id: `series-${Date.now()}`,
       title,
-      categoryId: template?.defaultCategoryId || categories[0]?.id || "",
-      date: series.startDate,
+      categoryId,
+      date: nextDate,
       published: false,
       seriesId: series.id,
       templateId: template?.id,
       contentType: template?.contentType,
-      pipelineStageId: template?.defaultPipeline[0]?.id,
-      checklist: template?.defaultChecklist.map((item, idx) => ({
+      pipelineStageId: template?.defaultPipeline?.[0]?.id,
+      checklist: template?.defaultChecklist?.map((item, idx) => ({
         id: `check-${Date.now()}-${idx}`,
         label: item.label,
         isDone: false,
@@ -880,7 +958,7 @@ const Index = () => {
     );
     syncContentCreate(newContent);
     syncSeriesUpdate(updatedSeries);
-    toast.success(`Generato: ${title}`);
+    toast.success(`Generato: ${title} - ${format(nextDate, "d MMM yyyy", { locale: it })}`);
   };
 
 

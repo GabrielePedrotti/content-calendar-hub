@@ -69,7 +69,27 @@ const PATTERN_LABELS: Record<Series["pattern"], string> = {
   custom: "Pattern personalizzato",
 };
 
-const DAY_LABELS = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
+// Days ordered Monday-Sunday for UI display
+const DAY_LABELS_ORDERED = [
+  { label: "Lun", value: 1 },
+  { label: "Mar", value: 2 },
+  { label: "Mer", value: 3 },
+  { label: "Gio", value: 4 },
+  { label: "Ven", value: 5 },
+  { label: "Sab", value: 6 },
+  { label: "Dom", value: 0 },
+];
+
+// For display purposes (value to label)
+const DAY_VALUE_TO_LABEL: Record<number, string> = {
+  0: "Dom",
+  1: "Lun",
+  2: "Mar",
+  3: "Mer",
+  4: "Gio",
+  5: "Ven",
+  6: "Sab",
+};
 
 const createDefaultSeries = (): Omit<Series, "id"> => ({
   name: "",
@@ -186,7 +206,13 @@ export const SeriesManager = ({
 
   const getPatternDescription = (s: Series) => {
     if (s.pattern === "custom" && s.customDays && s.customDays.length > 0) {
-      return s.customDays.map((d) => DAY_LABELS[d]).join(", ");
+      // Sort days in weekday order (Mon=1 first, Sun=0 last)
+      const sortedDays = [...s.customDays].sort((a, b) => {
+        const orderA = a === 0 ? 7 : a;
+        const orderB = b === 0 ? 7 : b;
+        return orderA - orderB;
+      });
+      return sortedDays.map((d) => DAY_VALUE_TO_LABEL[d]).join(", ");
     }
     return PATTERN_LABELS[s.pattern];
   };
@@ -424,16 +450,16 @@ export const SeriesManager = ({
               <div className="space-y-2 p-3 rounded-lg border bg-muted/30">
                 <Label>Giorni della settimana</Label>
                 <div className="flex flex-wrap gap-2">
-                  {DAY_LABELS.map((day, index) => (
+                  {DAY_LABELS_ORDERED.map(({ label, value }) => (
                     <Button
-                      key={index}
+                      key={value}
                       type="button"
-                      variant={formData.customDays?.includes(index) ? "default" : "outline"}
+                      variant={formData.customDays?.includes(value) ? "default" : "outline"}
                       size="sm"
-                      onClick={() => toggleCustomDay(index)}
+                      onClick={() => toggleCustomDay(value)}
                       className="w-12"
                     >
-                      {day}
+                      {label}
                     </Button>
                   ))}
                 </div>
