@@ -116,6 +116,9 @@ const Index = () => {
   // Track if "2" key is pressed for secondary template
   const [isSecondaryTemplateMode, setIsSecondaryTemplateMode] = useState(false);
 
+  // Track hovered category for "N" shortcut
+  const [hoveredCategoryId, setHoveredCategoryId] = useState<string | null>(null);
+
   // Undo Stack interface (implementation after useWebSocket)
   interface UndoState {
     contents: ContentItem[];
@@ -345,10 +348,14 @@ const Index = () => {
         return;
       }
       
-      // "N" opens new content dialog
+      // "N" opens new content dialog (with hovered category if any)
       if (e.key === "n" || e.key === "N") {
         e.preventDefault();
-        handleAddContent();
+        if (hoveredCategoryId) {
+          handleEditContent(undefined, hoveredCategoryId, undefined, undefined);
+        } else {
+          handleAddContent();
+        }
       }
       
       // "1" enables primary template mode (opens popup on cell click)
@@ -1130,6 +1137,7 @@ const Index = () => {
                         isPrimaryTemplateMode={isPrimaryTemplateMode}
                         isSecondaryTemplateMode={isSecondaryTemplateMode}
                         templates={templates}
+                        onCategoryHover={setHoveredCategoryId}
                       />
                     </div>
                   );
@@ -1165,6 +1173,7 @@ const Index = () => {
                   isPrimaryTemplateMode={isPrimaryTemplateMode}
                   isSecondaryTemplateMode={isSecondaryTemplateMode}
                   templates={templates}
+                  onCategoryHover={setHoveredCategoryId}
                 />
               ))
             )}
