@@ -391,10 +391,10 @@ const Index = () => {
       const allWeeks: { weekNumber: number; days: WeekDay[]; monthYear: string; monthLabelDate: Date }[] = [];
       let weekCounter = 1;
 
-      // Calcola data di inizio basata su endlessWeeksBefore
-      const startDate = subMonths(currentDate, Math.ceil(endlessWeeksBefore / 4));
+      // Use endlessWeeksBefore directly as the number of weeks to go back (not months)
+      const weeksBackMonths = endlessWeeksBefore > 0 ? Math.max(1, Math.floor(endlessWeeksBefore / 4)) : 0;
 
-      for (let i = -Math.ceil(endlessWeeksBefore / 4); i < monthsToShow; i++) {
+      for (let i = -weeksBackMonths; i < monthsToShow; i++) {
         const targetDate = addMonths(currentDate, i);
         const monthStart = startOfMonth(targetDate);
         const monthEnd = endOfMonth(targetDate);
@@ -1112,6 +1112,7 @@ const Index = () => {
                         monthLabelDate={week.monthLabelDate}
                         isPrimaryTemplateMode={isPrimaryTemplateMode}
                         isSecondaryTemplateMode={isSecondaryTemplateMode}
+                        templates={templates}
                       />
                     </div>
                   );
@@ -1146,6 +1147,7 @@ const Index = () => {
                   monthLabelDate={week.monthLabelDate}
                   isPrimaryTemplateMode={isPrimaryTemplateMode}
                   isSecondaryTemplateMode={isSecondaryTemplateMode}
+                  templates={templates}
                 />
               ))
             )}

@@ -99,6 +99,10 @@ export interface ContentTemplate {
   defaultChecklist: Omit<ChecklistItem, 'id' | 'isDone'>[];
   durationEstimate?: number;
   linkedShortTemplateId?: string; // Template to use for auto-generated shorts
+  // Frequency/repetition settings (merged from shorts preset)
+  frequencyPattern?: 'none' | 'daily' | 'weekdays' | 'weekly' | 'custom';
+  frequencyCustomDays?: number[]; // 0-6 for Sun-Sat when pattern is 'custom'
+  frequencyCount?: number; // How many events to create at once
 }
 
 // Series system (advanced repetitions)

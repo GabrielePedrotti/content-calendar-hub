@@ -31,6 +31,7 @@ interface CompactWeekGridProps {
   monthLabelDate?: Date;
   isPrimaryTemplateMode?: boolean;
   isSecondaryTemplateMode?: boolean;
+  templates?: { id: string; name: string; defaultCategoryId?: string }[];
 }
 
 export const CompactWeekGrid = ({
@@ -58,6 +59,7 @@ export const CompactWeekGrid = ({
   monthLabelDate,
   isPrimaryTemplateMode = false,
   isSecondaryTemplateMode = false,
+  templates = [],
 }: CompactWeekGridProps) => {
   const [dayDialogOpen, setDayDialogOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
@@ -246,6 +248,7 @@ export const CompactWeekGrid = ({
                         isDisabled={isDisabled}
                         isPrimaryTemplateMode={isPrimaryTemplateMode}
                         isSecondaryTemplateMode={isSecondaryTemplateMode}
+                        templates={templates}
                       />
                     );
                   })}

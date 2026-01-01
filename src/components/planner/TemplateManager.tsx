@@ -66,6 +66,9 @@ const createDefaultTemplate = (): Omit<ContentTemplate, "id"> => ({
     order: item.order,
   })),
   linkedShortTemplateId: undefined,
+  frequencyPattern: 'none',
+  frequencyCustomDays: [],
+  frequencyCount: 1,
 });
 
 export const TemplateManager = ({
@@ -101,6 +104,9 @@ export const TemplateManager = ({
       defaultChecklist: template.defaultChecklist,
       durationEstimate: template.durationEstimate,
       linkedShortTemplateId: template.linkedShortTemplateId,
+      frequencyPattern: template.frequencyPattern || 'none',
+      frequencyCustomDays: template.frequencyCustomDays || [],
+      frequencyCount: template.frequencyCount || 1,
     });
     setOpen(true);
   };
@@ -421,6 +427,82 @@ export const TemplateManager = ({
                   </p>
                 </div>
               )}
+
+              {/* Frequency/Repetition Settings */}
+              <div className="space-y-3 p-3 rounded-lg border border-accent/20 bg-accent/5">
+                <Label className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-accent" />
+                  Ripetizione Automatica
+                </Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs">Pattern</Label>
+                    <Select
+                      value={formData.frequencyPattern || "none"}
+                      onValueChange={(v) =>
+                        setFormData({
+                          ...formData,
+                          frequencyPattern: v as any,
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Nessuna ripetizione</SelectItem>
+                        <SelectItem value="daily">Giornaliero</SelectItem>
+                        <SelectItem value="weekdays">Giorni feriali</SelectItem>
+                        <SelectItem value="weekly">Settimanale</SelectItem>
+                        <SelectItem value="custom">Personalizzato</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Quanti eventi creare</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={formData.frequencyCount || 1}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          frequencyCount: parseInt(e.target.value) || 1,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+                {formData.frequencyPattern === "custom" && (
+                  <div className="space-y-2">
+                    <Label className="text-xs">Giorni della settimana</Label>
+                    <div className="flex gap-1 flex-wrap">
+                      {["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"].map((day, idx) => (
+                        <Button
+                          key={idx}
+                          type="button"
+                          size="sm"
+                          variant={formData.frequencyCustomDays?.includes(idx) ? "default" : "outline"}
+                          className="h-7 px-2 text-xs"
+                          onClick={() => {
+                            const current = formData.frequencyCustomDays || [];
+                            const updated = current.includes(idx)
+                              ? current.filter((d) => d !== idx)
+                              : [...current, idx].sort();
+                            setFormData({ ...formData, frequencyCustomDays: updated });
+                          }}
+                        >
+                          {day}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Quando usi questo template, verranno creati automaticamente più eventi secondo il pattern.
+                </p>
+              </div>
             </TabsContent>
 
             <TabsContent value="pipeline" className="space-y-4 mt-4 flex-1 overflow-y-auto">

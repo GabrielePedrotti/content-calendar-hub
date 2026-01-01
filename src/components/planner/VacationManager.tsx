@@ -45,6 +45,15 @@ export const VacationManager = ({
     return vacations.filter((v) => isBefore(v.endDate, today));
   }, [vacations, today]);
 
+  // Auto-clean expired vacations when dialog opens
+  const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen);
+    if (isOpen && expiredVacations.length > 0) {
+      // Automatically remove expired vacations when opening the manager
+      expiredVacations.forEach((v) => onDeleteVacation(v.id));
+    }
+  };
+
   const handleAdd = () => {
     if (startDate && endDate && label) {
       onAddVacation(startDate, endDate, label);
@@ -59,7 +68,7 @@ export const VacationManager = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2">
           <Umbrella className="h-4 w-4" />
