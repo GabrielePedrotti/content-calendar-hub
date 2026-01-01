@@ -830,6 +830,10 @@ const Index = () => {
   const handleAddSeries = (series: Series) => {
     setSeriesList((prev) => [...prev, series]);
     syncSeriesCreate(series);
+    
+    // Auto-generate all episodes for the series
+    generateAllSeriesEpisodes(series);
+    
     toast.success(`Serie "${series.name}" creata`);
   };
 
@@ -840,9 +844,100 @@ const Index = () => {
   };
 
   const handleDeleteSeries = (id: string) => {
+    // Delete all contents linked to this series
+    const seriesToDelete = seriesList.find((s) => s.id === id);
+    const linkedContents = contents.filter((c) => c.seriesId === id);
+    
+    // Remove contents from state and sync
+    linkedContents.forEach((content) => {
+      syncContentDelete(content.id);
+    });
+    setContents((prev) => prev.filter((c) => c.seriesId !== id));
+    
+    // Remove series
     setSeriesList((prev) => prev.filter((s) => s.id !== id));
     syncSeriesDelete(id);
-    toast.success("Serie eliminata");
+    
+    toast.success(`Serie eliminata (${linkedContents.length} contenuti rimossi)`);
+  };
+
+  // Helper function to generate all episodes for a series
+  const generateAllSeriesEpisodes = (series: Series) => {
+    const template = templates.find((t) => t.id === series.templateId);
+    const categoryId = series.categoryId || template?.defaultCategoryId || categories[0]?.id || "";
+    
+    const isValidDateForPattern = (date: Date, s: Series): boolean => {
+      const dayOfWeek = date.getDay();
+      
+      switch (s.pattern) {
+        case 'daily':
+          return !s.options.skipWeekends || !isWeekend(date);
+        case 'weekdays':
+          return dayOfWeek >= 1 && dayOfWeek <= 5;
+        case 'weekly':
+          return dayOfWeek === new Date(s.startDate).getDay();
+        case 'biweekly':
+          if (dayOfWeek !== new Date(s.startDate).getDay()) return false;
+          const weeksDiff = Math.floor((date.getTime() - new Date(s.startDate).getTime()) / (7 * 24 * 60 * 60 * 1000));
+          return weeksDiff % 2 === 0;
+        case 'monthly':
+          return date.getDate() === new Date(s.startDate).getDate();
+        case 'custom':
+          return s.customDays?.includes(dayOfWeek) ?? false;
+        default:
+          return true;
+      }
+    };
+    
+    const newContents: ContentItem[] = [];
+    let currentDate = new Date(series.startDate);
+    let episodeNumber = series.currentNumber;
+    const maxEpisodes = series.occurrencesCount || 52; // Default max 52 episodes (1 year weekly)
+    const endDate = series.endDate || addDays(new Date(), 365); // Default 1 year from now
+    
+    // Find all valid dates
+    while (newContents.length < maxEpisodes && currentDate <= endDate) {
+      if (isValidDateForPattern(currentDate, series)) {
+        const title = (series.options.titlePattern || "{series_name} Ep. {n}")
+          .replace("{series_name}", series.name)
+          .replace("{n}", episodeNumber.toString());
+        
+        const newContent: ContentItem = {
+          id: `series-${Date.now()}-${newContents.length}`,
+          title,
+          categoryId,
+          date: new Date(currentDate),
+          published: false,
+          seriesId: series.id,
+          templateId: template?.id,
+          contentType: template?.contentType,
+          pipelineStageId: template?.defaultPipeline?.[0]?.id,
+          checklist: template?.defaultChecklist?.map((item, idx) => ({
+            id: `check-${Date.now()}-${newContents.length}-${idx}`,
+            label: item.label,
+            isDone: false,
+            order: item.order,
+          })),
+        };
+        
+        newContents.push(newContent);
+        episodeNumber++;
+      }
+      currentDate = addDays(currentDate, 1);
+    }
+    
+    // Add all contents at once
+    if (newContents.length > 0) {
+      setContents((prev) => [...prev, ...newContents]);
+      newContents.forEach((content) => syncContentCreate(content));
+      
+      // Update series with new currentNumber
+      const updatedSeries: Series = { ...series, currentNumber: episodeNumber };
+      setSeriesList((prev) => prev.map((s) => s.id === series.id ? updatedSeries : s));
+      syncSeriesUpdate(updatedSeries);
+      
+      toast.success(`Generati ${newContents.length} episodi per "${series.name}"`);
+    }
   };
 
   const handleGenerateSeriesOccurrences = (seriesId: string) => {
