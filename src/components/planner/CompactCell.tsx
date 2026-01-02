@@ -201,10 +201,6 @@ export const CompactCell = ({
 
   const isHighlighted = contents.some((c) => c.id === highlightedContentId);
 
-  // Usa minRowHeight dalla categoria
-  const minHeight = category.minRowHeight || 44;
-  const cellHeight = maxContentsInRow <= 1 ? `${minHeight}px` : `${minHeight + (maxContentsInRow - 1) * 16}px`;
-  
   // Determina quanti contenuti mostrare inline
   const visibleContents = contents.slice(0, maxVisibleContents);
   const remainingCount = Math.max(0, contents.length - maxVisibleContents);
@@ -217,10 +213,9 @@ export const CompactCell = ({
           backgroundColor: contents.length > 0 
             ? `hsl(${category.color} / ${cellOpacity.filled / 100})` 
             : `hsl(${category.color} / ${cellOpacity.empty / 100})`,
-          height: cellHeight,
         }}
         className={cn(
-          "border transition-all relative flex items-center justify-center px-2",
+          "border transition-all relative flex items-center justify-center px-2 h-full",
           isSunday && "bg-sunday-accent",
           isVacation && "bg-vacation-overlay",
           "ring-2 ring-primary"
@@ -339,12 +334,9 @@ export const CompactCell = ({
   return (
     <div
       ref={cellRef}
-      style={{
-        ...getCellStyle(),
-        height: cellHeight,
-      }}
+      style={getCellStyle()}
       className={cn(
-        "border-l border-r border-grid-border transition-all relative group flex flex-col items-center justify-center px-1.5 py-1",
+        "border-l border-r border-grid-border transition-all relative group flex flex-col items-center justify-center px-1.5 py-1 h-full",
         isDisabled 
           ? "opacity-30 cursor-not-allowed bg-muted/10" 
           : "cursor-pointer",

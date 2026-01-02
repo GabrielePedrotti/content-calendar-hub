@@ -98,6 +98,10 @@ export const CompactWeekGrid = ({
   // Mese di riferimento per questa settimana (il primo mese che appare)
   const primaryMonth = endlessMode && monthLabelDate ? getMonth(monthLabelDate) : null;
 
+  // Altezza base per celle vuote
+  const BASE_EMPTY_HEIGHT = 36;
+  const CONTENT_LINE_HEIGHT = 24;
+
   // Calcola il numero massimo di contenuti per ogni riga di categoria
   const getMaxContentsInRow = (categoryId: string) => {
     let max = 0;
@@ -110,26 +114,31 @@ export const CompactWeekGrid = ({
     return max;
   };
 
-  // Calcola l'altezza in base al numero massimo di contenuti e all'altezza minima della categoria
+  // Calcola quanti contenuti mostrare per una categoria in base all'altezza minima
+  const getMaxVisibleContents = (categoryId: string) => {
+    const category = categories.find(c => c.id === categoryId);
+    const minHeight = category?.minRowHeight || 44;
+    // Ogni contenuto ha bisogno di circa 24px
+    return Math.max(1, Math.floor(minHeight / CONTENT_LINE_HEIGHT));
+  };
+
+  // Calcola l'altezza della riga in base ai contenuti effettivi
   const getRowHeight = (categoryId: string, maxContents: number) => {
     const category = categories.find(c => c.id === categoryId);
     const minHeight = category?.minRowHeight || 44;
     
-    // Calcola quanti contenuti possono essere visibili in base all'altezza minima
-    const contentsPerMinHeight = Math.max(1, Math.floor((minHeight - 20) / 20));
-    
-    // Se ci sono più contenuti del previsto, aumenta l'altezza
-    if (maxContents > contentsPerMinHeight) {
-      return `${minHeight + (maxContents - contentsPerMinHeight) * 16}px`;
+    // Se non ci sono contenuti nella riga, usa l'altezza base
+    if (maxContents === 0) {
+      return `${BASE_EMPTY_HEIGHT}px`;
     }
-    return `${minHeight}px`;
-  };
-
-  // Calcola quanti contenuti mostrare per una categoria
-  const getMaxVisibleContents = (categoryId: string) => {
-    const category = categories.find(c => c.id === categoryId);
-    const minHeight = category?.minRowHeight || 44;
-    return Math.max(1, Math.floor((minHeight - 20) / 20));
+    
+    // Calcola l'altezza necessaria per i contenuti
+    const maxVisible = getMaxVisibleContents(categoryId);
+    const visibleCount = Math.min(maxContents, maxVisible);
+    const neededHeight = visibleCount * CONTENT_LINE_HEIGHT + 8; // +8 per padding
+    
+    // Usa il massimo tra altezza minima configurata e altezza necessaria
+    return `${Math.max(minHeight, neededHeight)}px`;
   };
 
   // Determina se questo giorno è il primo di un mese diverso nella settimana
