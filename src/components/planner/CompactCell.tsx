@@ -49,6 +49,7 @@ interface CompactCellProps {
   highlightedContentId?: string | null;
   cellOpacity: { empty: number; filled: number };
   maxContentsInRow: number;
+  maxVisibleContents?: number;
   isDisabled?: boolean;
   isPrimaryTemplateMode?: boolean;
   isSecondaryTemplateMode?: boolean;
@@ -82,6 +83,7 @@ export const CompactCell = ({
   highlightedContentId,
   cellOpacity,
   maxContentsInRow,
+  maxVisibleContents = 2,
   isDisabled = false,
   isPrimaryTemplateMode = false,
   isSecondaryTemplateMode = false,
@@ -199,7 +201,13 @@ export const CompactCell = ({
 
   const isHighlighted = contents.some((c) => c.id === highlightedContentId);
 
-  const cellHeight = maxContentsInRow <= 1 ? "44px" : "60px";
+  // Usa minRowHeight dalla categoria
+  const minHeight = category.minRowHeight || 44;
+  const cellHeight = maxContentsInRow <= 1 ? `${minHeight}px` : `${minHeight + (maxContentsInRow - 1) * 16}px`;
+  
+  // Determina quanti contenuti mostrare inline
+  const visibleContents = contents.slice(0, maxVisibleContents);
+  const remainingCount = Math.max(0, contents.length - maxVisibleContents);
 
   if (isEditing) {
     return (
@@ -234,8 +242,6 @@ export const CompactCell = ({
     );
   }
 
-  const visibleContents = contents.length <= 2 ? contents : [contents[0]];
-  const remainingCount = Math.max(0, contents.length - 1);
 
   const getCellStyle = () => {
     const baseStyle: React.CSSProperties = {};
