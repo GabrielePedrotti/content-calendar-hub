@@ -507,8 +507,8 @@ export const CompactCell = ({
             </div>
           </div>
         )
-      ) : contents.length === 2 ? (
-        // Two contents - show both with per-item context menu (no TooltipProvider wrapping ContextMenuTrigger)
+      ) : contents.length <= maxVisibleContents ? (
+        // Up to maxVisibleContents - show all inline
         <div className="w-full space-y-1 overflow-hidden py-0.5">
           <TooltipProvider>
             {contents.map((content) => (
@@ -599,83 +599,99 @@ export const CompactCell = ({
           </TooltipProvider>
         </div>
       ) : (
-        // More than 2 contents - show first one + popover with all (with context menu)
+        // More than maxVisibleContents - show visibleContents + "+N" and popover with all
         <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
           <PopoverTrigger asChild>
             <div
               className="w-full space-y-1 overflow-hidden py-0.5 cursor-pointer"
               onMouseEnter={() => setPopoverOpen(true)}
             >
-              <ContextMenu>
-                <ContextMenuTrigger asChild>
-                  <div
-                    data-content-id={contents[0].id}
-                    className="flex items-center gap-1.5 text-[11px] hover:bg-background/30 px-1 py-0.5 rounded transition-colors"
-                    draggable
-                    onDragStart={(e) => {
-                      e.stopPropagation();
-                      onDragStart(contents[0], e.altKey);
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleClick(e, contents[0]);
-                    }}
-                    onMouseEnter={() => onContentHover?.(contents[0].id)}
-                    onMouseLeave={() => onContentHover?.(null)}
-                  >
-                    <button
-                      onClick={(e) => handleTogglePublished(e, contents[0])}
-                      className="flex-shrink-0 hover:scale-110 transition-transform"
-                    >
-                      {contents[0].published ? (
-                        <div className="h-2.5 w-2.5 rounded-full bg-green-500 flex items-center justify-center">
-                          <Check className="h-1.5 w-1.5 text-white" strokeWidth={3} />
-                        </div>
-                      ) : (
-                        <div className="h-2.5 w-2.5 rounded-full bg-background border-2 border-muted-foreground/40" />
-                      )}
-                    </button>
-                    <span
-                      className={cn(
-                        "truncate flex-1 font-medium leading-tight",
-                        contents[0].published && "opacity-75",
-                      )}
-                    >
-                      {contents[0].title}
-                    </span>
-                    {contents[0].linkedContentId && (
-                      <button
-                        onMouseEnter={() => onLinkHover(contents[0].linkedContentId!)}
-                        onMouseLeave={() => onLinkHover(null)}
+              <TooltipProvider>
+                {visibleContents.map((content) => (
+                  <ContextMenu key={content.id}>
+                    <ContextMenuTrigger asChild>
+                      <div
+                        data-content-id={content.id}
+                        className="flex items-center gap-1.5 text-[11px] hover:bg-background/30 px-1 py-0.5 rounded transition-colors"
+                        draggable
+                        onDragStart={(e) => {
+                          e.stopPropagation();
+                          onDragStart(content, e.altKey);
+                        }}
                         onClick={(e) => {
                           e.stopPropagation();
-                          onLinkClick(contents[0]);
+                          handleClick(e, content);
                         }}
-                        className="flex-shrink-0 hover:scale-110 transition-transform"
+                        onMouseEnter={() => onContentHover?.(content.id)}
+                        onMouseLeave={() => onContentHover?.(null)}
                       >
-                        <Link2 className="h-2.5 w-2.5 text-primary" />
-                      </button>
-                    )}
-                  </div>
-                </ContextMenuTrigger>
-                <ContextMenuContent>
-                  <ContextMenuItem onClick={() => onDuplicate(contents[0])}>
-                    <Copy className="h-4 w-4 mr-2" />
-                    Duplica
-                  </ContextMenuItem>
-                  <ContextMenuItem onClick={() => onTogglePublished(contents[0])}>
-                    <Check className="h-4 w-4 mr-2" />
-                    {contents[0].published ? "Segna non pubblicato" : "Segna pubblicato"}
-                  </ContextMenuItem>
-                  <ContextMenuItem
-                    onClick={() => onDelete(contents[0])}
-                    className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Elimina
-                  </ContextMenuItem>
-                </ContextMenuContent>
-              </ContextMenu>
+                        <button
+                          onClick={(e) => handleTogglePublished(e, content)}
+                          className="flex-shrink-0 hover:scale-110 transition-transform"
+                        >
+                          {content.published ? (
+                            <div className="h-2.5 w-2.5 rounded-full bg-green-500 flex items-center justify-center">
+                              <Check className="h-1.5 w-1.5 text-white" strokeWidth={3} />
+                            </div>
+                          ) : (
+                            <div className="h-2.5 w-2.5 rounded-full bg-background border-2 border-muted-foreground/40" />
+                          )}
+                        </button>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span
+                              className={cn(
+                                "truncate flex-1 font-medium leading-tight",
+                                content.published && "opacity-75",
+                              )}
+                            >
+                              {content.title}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="max-w-[300px]">{content.title}</p>
+                            {content.notes && (
+                              <p className="text-xs text-muted-foreground mt-1">{content.notes}</p>
+                            )}
+                          </TooltipContent>
+                        </Tooltip>
+
+                        {content.linkedContentId && (
+                          <button
+                            onMouseEnter={() => onLinkHover(content.linkedContentId!)}
+                            onMouseLeave={() => onLinkHover(null)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onLinkClick(content);
+                            }}
+                            className="flex-shrink-0 hover:scale-110 transition-transform"
+                          >
+                            <Link2 className="h-2.5 w-2.5 text-primary" />
+                          </button>
+                        )}
+                      </div>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                      <ContextMenuItem onClick={() => onDuplicate(content)}>
+                        <Copy className="h-4 w-4 mr-2" />
+                        Duplica
+                      </ContextMenuItem>
+                      <ContextMenuItem onClick={() => onTogglePublished(content)}>
+                        <Check className="h-4 w-4 mr-2" />
+                        {content.published ? "Segna non pubblicato" : "Segna pubblicato"}
+                      </ContextMenuItem>
+                      <ContextMenuItem
+                        onClick={() => onDelete(content)}
+                        className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Elimina
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
+                ))}
+              </TooltipProvider>
 
               <button
                 onClick={(e) => {
