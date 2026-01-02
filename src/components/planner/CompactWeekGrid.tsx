@@ -110,10 +110,26 @@ export const CompactWeekGrid = ({
     return max;
   };
 
-  // Calcola l'altezza in base al numero massimo di contenuti
-  const getRowHeight = (maxContents: number) => {
-    if (maxContents <= 1) return "44px";
-    return "60px";
+  // Calcola l'altezza in base al numero massimo di contenuti e all'altezza minima della categoria
+  const getRowHeight = (categoryId: string, maxContents: number) => {
+    const category = categories.find(c => c.id === categoryId);
+    const minHeight = category?.minRowHeight || 44;
+    
+    // Calcola quanti contenuti possono essere visibili in base all'altezza minima
+    const contentsPerMinHeight = Math.max(1, Math.floor((minHeight - 20) / 20));
+    
+    // Se ci sono più contenuti del previsto, aumenta l'altezza
+    if (maxContents > contentsPerMinHeight) {
+      return `${minHeight + (maxContents - contentsPerMinHeight) * 16}px`;
+    }
+    return `${minHeight}px`;
+  };
+
+  // Calcola quanti contenuti mostrare per una categoria
+  const getMaxVisibleContents = (categoryId: string) => {
+    const category = categories.find(c => c.id === categoryId);
+    const minHeight = category?.minRowHeight || 44;
+    return Math.max(1, Math.floor((minHeight - 20) / 20));
   };
 
   // Determina se questo giorno è il primo di un mese diverso nella settimana
@@ -139,6 +155,7 @@ export const CompactWeekGrid = ({
             {/* Lista categorie */}
             {categories.map((category) => {
               const maxInRow = getMaxContentsInRow(category.id);
+              const maxVisible = getMaxVisibleContents(category.id);
               return (
                 <div
                   key={category.id}
@@ -146,7 +163,7 @@ export const CompactWeekGrid = ({
                   style={{ 
                     backgroundColor: `hsl(${category.color} / 0.25)`,
                     color: `hsl(${category.color.split(' ')[0]} ${category.color.split(' ')[1]} 70%)`,
-                    height: getRowHeight(maxInRow)
+                    height: getRowHeight(category.id, maxInRow)
                   }}
                 >
                   {category.name}
@@ -239,6 +256,7 @@ export const CompactWeekGrid = ({
             {/* Righe categorie */}
             {categories.map((category) => {
               const maxInRow = getMaxContentsInRow(category.id);
+              const maxVisible = getMaxVisibleContents(category.id);
               return (
                 <div key={category.id} className="grid grid-cols-7">
                   {weekDays.map((day, dayIndex) => {
@@ -284,6 +302,7 @@ export const CompactWeekGrid = ({
                         highlightedContentId={highlightedContentId}
                         cellOpacity={cellOpacity}
                         maxContentsInRow={maxInRow}
+                        maxVisibleContents={maxVisible}
                         isDisabled={isDisabled}
                         isPrimaryTemplateMode={isPrimaryTemplateMode}
                         isSecondaryTemplateMode={isSecondaryTemplateMode}

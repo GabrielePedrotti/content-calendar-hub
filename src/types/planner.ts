@@ -27,6 +27,7 @@ export interface Category {
   features?: CategoryFeatures;
   defaultTemplateId?: string; // Template used when clicking +
   secondaryTemplateId?: string; // Template used when pressing 2 + clicking +
+  minRowHeight?: number; // Minimum row height in pixels (controls how many contents are visible)
 }
 
 export interface PipelineStage {

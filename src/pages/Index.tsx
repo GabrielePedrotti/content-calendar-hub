@@ -768,7 +768,7 @@ const Index = () => {
   };
 
   // Gestione categorie
-  const handleAddCategory = (name: string, color: string, features?: CategoryFeatures, defaultTemplateId?: string, secondaryTemplateId?: string) => {
+  const handleAddCategory = (name: string, color: string, features?: CategoryFeatures, defaultTemplateId?: string, secondaryTemplateId?: string, minRowHeight?: number) => {
     pushUndo("add_category");
     const newCategory: Category = {
       id: Date.now().toString(),
@@ -777,15 +777,16 @@ const Index = () => {
       features: features || { ...DEFAULT_CATEGORY_FEATURES },
       defaultTemplateId,
       secondaryTemplateId,
+      minRowHeight,
     };
     setCategories((prev) => [...prev, newCategory]);
     syncCategoryCreate(newCategory);
     toast.success(`Categoria "${name}" aggiunta`);
   };
 
-  const handleUpdateCategory = (id: string, name: string, color: string, features?: CategoryFeatures, defaultTemplateId?: string, secondaryTemplateId?: string) => {
+  const handleUpdateCategory = (id: string, name: string, color: string, features?: CategoryFeatures, defaultTemplateId?: string, secondaryTemplateId?: string, minRowHeight?: number) => {
     pushUndo("update_category");
-    const updatedCategory: Category = { id, name, color, features, defaultTemplateId, secondaryTemplateId };
+    const updatedCategory: Category = { id, name, color, features, defaultTemplateId, secondaryTemplateId, minRowHeight };
     setCategories((prev) =>
       prev.map((cat) => (cat.id === id ? updatedCategory : cat))
     );

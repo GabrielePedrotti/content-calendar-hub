@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Settings, Trash2, Pencil, GripVertical, Plus, ChevronDown, ChevronUp, LayoutTemplate } from "lucide-react";
+import { Settings, Trash2, Pencil, GripVertical, Plus, ChevronDown, ChevronUp, LayoutTemplate, Rows } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,8 +39,8 @@ import { cn } from "@/lib/utils";
 interface CategoryManagerProps {
   categories: Category[];
   templates: ContentTemplate[];
-  onAddCategory: (name: string, color: string, features?: CategoryFeatures, defaultTemplateId?: string, secondaryTemplateId?: string) => void;
-  onUpdateCategory: (id: string, name: string, color: string, features?: CategoryFeatures, defaultTemplateId?: string, secondaryTemplateId?: string) => void;
+  onAddCategory: (name: string, color: string, features?: CategoryFeatures, defaultTemplateId?: string, secondaryTemplateId?: string, minRowHeight?: number) => void;
+  onUpdateCategory: (id: string, name: string, color: string, features?: CategoryFeatures, defaultTemplateId?: string, secondaryTemplateId?: string, minRowHeight?: number) => void;
   onDeleteCategory: (id: string) => void;
   onReorderCategories?: (categories: Category[]) => void;
 }
@@ -69,8 +69,10 @@ export const CategoryManager = ({
   const [features, setFeatures] = useState<CategoryFeatures>({ ...DEFAULT_CATEGORY_FEATURES });
   const [defaultTemplateId, setDefaultTemplateId] = useState<string | undefined>();
   const [secondaryTemplateId, setSecondaryTemplateId] = useState<string | undefined>();
+  const [minRowHeight, setMinRowHeight] = useState<number>(44);
   const [featuresOpen, setFeaturesOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [rowHeightOpen, setRowHeightOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -83,8 +85,10 @@ export const CategoryManager = ({
     setFeatures(category.features || { ...DEFAULT_CATEGORY_FEATURES });
     setDefaultTemplateId(category.defaultTemplateId);
     setSecondaryTemplateId(category.secondaryTemplateId);
+    setMinRowHeight(category.minRowHeight || 44);
     setFeaturesOpen(false);
     setTemplatesOpen(false);
+    setRowHeightOpen(false);
   };
 
   const handleStartAdd = () => {
@@ -94,17 +98,19 @@ export const CategoryManager = ({
     setFeatures({ ...DEFAULT_CATEGORY_FEATURES });
     setDefaultTemplateId(undefined);
     setSecondaryTemplateId(undefined);
+    setMinRowHeight(44);
     setFeaturesOpen(false);
     setTemplatesOpen(false);
+    setRowHeightOpen(false);
   };
 
   const handleSave = () => {
     if (!name.trim()) return;
     
     if (editingId) {
-      onUpdateCategory(editingId, name.trim(), color, features, defaultTemplateId, secondaryTemplateId);
+      onUpdateCategory(editingId, name.trim(), color, features, defaultTemplateId, secondaryTemplateId, minRowHeight);
     } else {
-      onAddCategory(name.trim(), color, features, defaultTemplateId, secondaryTemplateId);
+      onAddCategory(name.trim(), color, features, defaultTemplateId, secondaryTemplateId, minRowHeight);
     }
     
     setEditingId(null);
@@ -113,8 +119,10 @@ export const CategoryManager = ({
     setFeatures({ ...DEFAULT_CATEGORY_FEATURES });
     setDefaultTemplateId(undefined);
     setSecondaryTemplateId(undefined);
+    setMinRowHeight(44);
     setFeaturesOpen(false);
     setTemplatesOpen(false);
+    setRowHeightOpen(false);
   };
 
   const handleDeleteClick = (id: string) => {
@@ -272,6 +280,56 @@ export const CategoryManager = ({
                             ))}
                           </SelectContent>
                         </Select>
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+
+                {/* Row Height Section */}
+                <Collapsible open={rowHeightOpen} onOpenChange={setRowHeightOpen}>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" className="w-full justify-between text-sm">
+                      <span className="flex items-center gap-2">
+                        <Rows className="h-4 w-4" />
+                        Altezza riga
+                      </span>
+                      {rowHeightOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pt-2">
+                    <div className="grid gap-3 p-3 bg-muted/30 rounded-lg">
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-2 block">
+                          Altezza minima: {minRowHeight}px ({Math.floor((minRowHeight - 20) / 20)} contenuti visibili)
+                        </Label>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setMinRowHeight(Math.max(28, minRowHeight - 16))}
+                          >
+                            -
+                          </Button>
+                          <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-primary transition-all"
+                              style={{ width: `${((minRowHeight - 28) / (120 - 28)) * 100}%` }}
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setMinRowHeight(Math.min(120, minRowHeight + 16))}
+                          >
+                            +
+                          </Button>
+                        </div>
+                        <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+                          <span>Compatto</span>
+                          <span>Espanso</span>
+                        </div>
                       </div>
                     </div>
                   </CollapsibleContent>
