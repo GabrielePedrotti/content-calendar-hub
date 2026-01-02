@@ -300,35 +300,55 @@ export const CategoryManager = ({
                     <div className="grid gap-3 p-3 bg-muted/30 rounded-lg">
                       <div>
                         <Label className="text-xs text-muted-foreground mb-2 block">
-                          Altezza minima: {minRowHeight}px ({Math.floor((minRowHeight - 20) / 20)} contenuti visibili)
+                          Altezza minima ({Math.floor((minRowHeight - 20) / 20)} contenuti visibili)
                         </Label>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setMinRowHeight(Math.max(28, minRowHeight - 16))}
-                          >
-                            -
-                          </Button>
-                          <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-primary transition-all"
-                              style={{ width: `${((minRowHeight - 28) / (120 - 28)) * 100}%` }}
-                            />
+                        <div className="flex items-center gap-3">
+                          <Input
+                            type="number"
+                            min={24}
+                            max={300}
+                            value={minRowHeight}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value) || 24;
+                              setMinRowHeight(Math.max(24, Math.min(300, val)));
+                            }}
+                            className="w-20 text-center"
+                          />
+                          <span className="text-sm text-muted-foreground">px</span>
+                          <div className="flex gap-1 ml-auto">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              onClick={() => setMinRowHeight(Math.max(24, minRowHeight - 10))}
+                            >
+                              -
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              onClick={() => setMinRowHeight(Math.min(300, minRowHeight + 10))}
+                            >
+                              +
+                            </Button>
                           </div>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setMinRowHeight(Math.min(120, minRowHeight + 16))}
-                          >
-                            +
-                          </Button>
                         </div>
-                        <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
-                          <span>Compatto</span>
-                          <span>Espanso</span>
+                        <div className="flex gap-2 mt-2">
+                          {[24, 44, 64, 100, 150].map((preset) => (
+                            <Button
+                              key={preset}
+                              type="button"
+                              variant={minRowHeight === preset ? "default" : "outline"}
+                              size="sm"
+                              className="text-xs px-2 h-6"
+                              onClick={() => setMinRowHeight(preset)}
+                            >
+                              {preset}px
+                            </Button>
+                          ))}
                         </div>
                       </div>
                     </div>
