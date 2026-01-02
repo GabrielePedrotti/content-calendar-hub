@@ -98,8 +98,6 @@ export const CompactWeekGrid = ({
   // Mese di riferimento per questa settimana (il primo mese che appare)
   const primaryMonth = endlessMode && monthLabelDate ? getMonth(monthLabelDate) : null;
 
-  // Altezza base per celle vuote
-  const BASE_EMPTY_HEIGHT = 36;
   const CONTENT_LINE_HEIGHT = 24;
 
   // Calcola il numero massimo di contenuti per ogni riga di categoria
@@ -122,23 +120,23 @@ export const CompactWeekGrid = ({
     return Math.max(1, Math.floor(minHeight / CONTENT_LINE_HEIGHT));
   };
 
-  // Calcola l'altezza della riga in base ai contenuti effettivi
+  // Calcola l'altezza della riga - usa sempre l'altezza minima della categoria
+  // Si espande solo se ci sono PIÙ contenuti di quelli che l'altezza minima può mostrare
   const getRowHeight = (categoryId: string, maxContents: number) => {
     const category = categories.find(c => c.id === categoryId);
     const minHeight = category?.minRowHeight || 44;
     
-    // Se non ci sono contenuti nella riga, usa l'altezza base
-    if (maxContents === 0) {
-      return `${BASE_EMPTY_HEIGHT}px`;
+    // Calcola quanti contenuti possono essere visualizzati con l'altezza minima
+    const maxVisible = getMaxVisibleContents(categoryId);
+    
+    // Se ci sono più contenuti di quelli visibili, espandi l'altezza
+    if (maxContents > maxVisible) {
+      const extraContents = maxContents - maxVisible;
+      return `${minHeight + extraContents * CONTENT_LINE_HEIGHT}px`;
     }
     
-    // Calcola l'altezza necessaria per i contenuti
-    const maxVisible = getMaxVisibleContents(categoryId);
-    const visibleCount = Math.min(maxContents, maxVisible);
-    const neededHeight = visibleCount * CONTENT_LINE_HEIGHT + 8; // +8 per padding
-    
-    // Usa il massimo tra altezza minima configurata e altezza necessaria
-    return `${Math.max(minHeight, neededHeight)}px`;
+    // Altrimenti usa sempre l'altezza minima configurata
+    return `${minHeight}px`;
   };
 
   // Determina se questo giorno è il primo di un mese diverso nella settimana
