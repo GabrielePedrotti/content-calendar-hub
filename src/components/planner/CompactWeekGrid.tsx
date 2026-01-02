@@ -264,8 +264,13 @@ export const CompactWeekGrid = ({
             {categories.map((category) => {
               const maxInRow = getMaxContentsInRow(category.id);
               const maxVisible = getMaxVisibleContents(category.id);
+              const rowHeight = getRowHeight(category.id, maxInRow);
               return (
-                <div key={category.id} className="grid grid-cols-7">
+                <div 
+                  key={category.id} 
+                  className="grid grid-cols-7"
+                  style={{ height: rowHeight }}
+                >
                   {weekDays.map((day, dayIndex) => {
                     const cellContents = contents.filter(
                       (c) => c.categoryId === category.id && isSameDay(c.date, day.date)
